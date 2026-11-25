@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
-import { History, Upload, Waves } from 'lucide-react';
+import { History, Sparkles, Upload, Waves } from 'lucide-react';
 import TextInput from '../components/TextInput.jsx';
 import LanguageSelector from '../components/LanguageSelector.jsx';
 import VoiceSelector from '../components/VoiceSelector.jsx';
 import GenerateButton from '../components/GenerateButton.jsx';
 import AudioPlayer from '../components/AudioPlayer.jsx';
 import ErrorMessage from '../components/ErrorMessage.jsx';
-import { getVoices, convertTextToSpeech, getBrowserVoices } from '../services/api.js';
+import { getVoices, convertTextToSpeech, getBrowserVoices, enhanceTextWithAi } from '../services/api.js';
+import { extractTextFromFile } from '../utils/documentParser.js';
 
 const MAX_CHARACTERS = 500;
 
@@ -18,6 +19,7 @@ export default function Home() {
   const [audioUrl, setAudioUrl] = useState('');
   const [audioFormat, setAudioFormat] = useState('');
   const [loading, setLoading] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
   const [error, setError] = useState('');
   const [browserMode, setBrowserMode] = useState(() => window.location.hostname.endsWith('github.io'));
   const [history, setHistory] = useState(() => {
@@ -124,6 +126,26 @@ export default function Home() {
     }
   }
 
+  async function handleAiEnhance(mode) {
+    if (!text.trim()) {
+      setError('Please enter some text before using AI enhancement.');
+      return;
+    }
+    setError('');
+    setAiLoading(true);
+    try {
+      const enhanced = await enhanceTextWithAi({ text, mode });
+      setText(enhanced.slice(0, MAX_CHARACTERS));
+      if (enhanced.length > MAX_CHARACTERS) {
+        setError('Enhanced text was trimmed to fit the 500-character limit.');
+      }
+    } catch (err) {
+      setError(err.message || 'AI text enhancement failed.');
+    } finally {
+      setAiLoading(false);
+    }
+  }
+
   function handleLanguageChange(nextLanguage) {
     setLanguage(nextLanguage);
     const nextVoice = voices.find((item) => item.language === nextLanguage);
@@ -133,14 +155,23 @@ export default function Home() {
   async function handleFileUpload(event) {
     const file = event.target.files?.[0];
     if (!file) return;
-    if (!file.name.toLowerCase().endsWith('.txt')) {
-      setError('For free browser mode, upload a plain text (.txt) file.');
-      return;
+    try {
+      setError('');
+      const content = await extractTextFromFile(file);
+      const cleanContent = content.trim();
+      if (!cleanContent) {
+        setError('No readable text found in the file.');
+        return;
+      }
+      setText(cleanContent.slice(0, MAX_CHARACTERS));
+      if (cleanContent.length > MAX_CHARACTERS) {
+        setError('Loaded the first 500 characters (maximum allowed limit).');
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to extract text from document.');
+    } finally {
+      event.target.value = '';
     }
-    const content = await file.text();
-    setText(content.slice(0, MAX_CHARACTERS));
-    setError(content.length > MAX_CHARACTERS ? 'Only the first 500 characters were loaded.' : '');
-    event.target.value = '';
   }
 
   return (
@@ -173,10 +204,40 @@ export default function Home() {
           maxLength={MAX_CHARACTERS}
         />
         <div className="utility-row">
-          <label className="upload-button">
-            <Upload size={15} /> Upload TXT
-            <input type="file" accept=".txt,text/plain" onChange={handleFileUpload} />
+          <label className="upload-button" title="Upload TXT, PDF, or DOCX">
+            <Upload size={15} /> Upload Doc
+            <input type="file" accept=".txt,.pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" onChange={handleFileUpload} />
           </label>
+          <div className="ai-enhance-group">
+            <button
+              className="ai-button"
+              type="button"
+              onClick={() => handleAiEnhance('conversational')}
+              disabled={aiLoading || !text.trim()}
+              title="Convert text into warm, conversational speech"
+            >
+              <Sparkles size={14} />
+              {aiLoading ? 'Enhancing...' : 'Conversational'}
+            </button>
+            <button
+              className="ai-sub-button"
+              type="button"
+              onClick={() => handleAiEnhance('summarize')}
+              disabled={aiLoading || !text.trim()}
+              title="Summarize text within limits"
+            >
+              Summarize
+            </button>
+            <button
+              className="ai-sub-button"
+              type="button"
+              onClick={() => handleAiEnhance('grammar')}
+              disabled={aiLoading || !text.trim()}
+              title="Fix grammar and phrasing"
+            >
+              Fix Grammar
+            </button>
+          </div>
           <label className="browser-mode-toggle">
             <input type="checkbox" checked={browserMode} onChange={(event) => setBrowserMode(event.target.checked)} />
             Free browser speech

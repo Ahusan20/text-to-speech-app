@@ -3,17 +3,83 @@ import { execFile } from 'node:child_process';
 import { mkdir, writeFile, unlink, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import * as googleTTS from 'google-tts-api';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const audioDirectory = path.join(__dirname, '..', 'audio');
 
 await mkdir(audioDirectory, { recursive: true });
 
+/**
+ * Stores audio buffer to Supabase Storage if configured, or falls back to local storage
+ */
+export async function storeAudioBuffer(buffer, mimeType, extension = 'mp3') {
+  const filename = `${randomUUID()}.${extension}`;
+
+  // 1. Durable Cloud Storage: Supabase Storage if configured
+  if (process.env.SUPABASE_URL && (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY)) {
+    try {
+      const supabaseUrl = process.env.SUPABASE_URL.replace(/\/+$/, '');
+      const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY;
+      const bucket = process.env.SUPABASE_STORAGE_BUCKET || 'speech-audio';
+      const uploadUrl = `${supabaseUrl}/storage/v1/object/${bucket}/${filename}`;
+
+      const res = await fetch(uploadUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${key}`,
+          'Content-Type': mimeType,
+          'x-upsert': 'true',
+        },
+        body: buffer,
+      });
+
+      if (res.ok) {
+        const publicUrl = `${supabaseUrl}/storage/v1/object/public/${bucket}/${filename}`;
+        return { audioUrl: publicUrl, format: mimeType, storage: 'supabase' };
+      }
+    } catch (err) {
+      console.warn('Supabase storage upload failed, falling back to local file storage:', err.message);
+    }
+  }
+
+  // 2. Local File Storage Fallback (for local development)
+  const filePath = path.join(audioDirectory, filename);
+  await writeFile(filePath, buffer);
+  return { audioUrl: `/audio/${filename}`, format: mimeType, storage: 'local' };
+}
+
 export async function generateSpeech(text, selectedVoice, speed = 1) {
+  // 1. ElevenLabs if API key configured
   if (process.env.TTS_API_KEY) {
     return generateWithElevenLabs(text, selectedVoice);
   }
-  return generateWithWindowsSapi(text, selectedVoice, speed);
+
+  // 2. Windows SAPI if on Windows and requested
+  if (process.platform === 'win32' && selectedVoice.id.startsWith('sapi-')) {
+    try {
+      return await generateWithWindowsSapi(text, selectedVoice, speed);
+    } catch (err) {
+      if (err.code !== 'VOICE_UNAVAILABLE') throw err;
+      // If voice is unavailable on Windows, fall through to universal Google TTS
+    }
+  }
+
+  // 3. Universal cloud / Linux TTS fallback (runs on Linux, Render, Windows without API keys)
+  return generateWithGoogleTts(text, selectedVoice, speed);
+}
+
+export async function generateWithGoogleTts(text, selectedVoice, speed = 1) {
+  const langCode = selectedVoice.language.split('-')[0] || 'en';
+  const base64 = await googleTTS.getAudioBase64(text, {
+    lang: langCode,
+    slow: speed < 0.9,
+    host: 'https://translate.google.com',
+    timeout: 15000,
+  });
+
+  const buffer = Buffer.from(base64, 'base64');
+  return storeAudioBuffer(buffer, 'audio/mpeg', 'mp3');
 }
 
 export async function generateWithElevenLabs(text, selectedVoice) {
@@ -50,10 +116,8 @@ export async function generateWithElevenLabs(text, selectedVoice) {
     throw providerError;
   }
 
-  const id = randomUUID();
-  const filename = `${id}.mp3`;
-  await writeFile(path.join(audioDirectory, filename), Buffer.from(await response.arrayBuffer()));
-  return { audioUrl: `/audio/${filename}`, format: 'audio/mpeg' };
+  const buffer = Buffer.from(await response.arrayBuffer());
+  return storeAudioBuffer(buffer, 'audio/mpeg', 'mp3');
 }
 
 export async function generateWithWindowsSapi(text, selectedVoice, speed = 1) {
@@ -101,7 +165,7 @@ $synth.Dispose()
     );
   });
 
-  return { audioUrl: `/audio/${filename}`, format: 'audio/wav' };
+  return { audioUrl: `/audio/${filename}`, format: 'audio/wav', storage: 'local' };
 }
 
 export function buildSapiVoiceSelectionScript(selectedVoice) {

@@ -101,3 +101,24 @@ test('POST /api/tts requires an application/json content type', async () => {
   assert.equal(response.status, 415);
   assert.match((await response.json()).message, /Content-Type must be application\/json/i);
 });
+
+test('POST /api/ai/enhance rejects empty text', async () => {
+  const response = await fetch(`${baseUrl}/api/ai/enhance`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text: '', mode: 'summarize' }),
+  });
+  assert.equal(response.status, 400);
+  assert.match((await response.json()).message, /Text is required/i);
+});
+
+test('POST /api/ai/enhance handles missing GEMINI_API_KEY gracefully', async () => {
+  const response = await fetch(`${baseUrl}/api/ai/enhance`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text: 'Hello test for AI', mode: 'summarize' }),
+  });
+  // Since GEMINI_API_KEY is not configured in test env, it should return 503 with helpful message
+  assert.equal(response.status, 503);
+  assert.match((await response.json()).message, /GEMINI_API_KEY/i);
+});

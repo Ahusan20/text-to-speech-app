@@ -2,10 +2,18 @@ import { voices, supportedLanguages } from '../utils/constants.js';
 import { generateSpeech } from '../services/ttsService.js';
 
 export function getHealth(_req, res) {
+  let provider = 'google-tts-cloud';
+  if (process.env.TTS_API_KEY) {
+    provider = 'elevenlabs';
+  } else if (process.platform === 'win32') {
+    provider = 'windows-sapi';
+  }
   return res.status(200).json({
     success: true,
     status: 'healthy',
-    provider: process.env.TTS_API_KEY ? 'elevenlabs' : 'windows-sapi',
+    provider,
+    platform: process.platform,
+    durableStorage: Boolean(process.env.SUPABASE_URL && (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY)),
   });
 }
 

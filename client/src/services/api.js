@@ -33,6 +33,21 @@ export async function checkHealth() {
   return data;
 }
 
+export async function enhanceTextWithAi({ text, mode = 'conversational' }) {
+  const response = await fetch('/api/ai/enhance', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ text, mode }),
+  });
+  const data = await response.json();
+  if (!response.ok || !data.success) {
+    throw new Error(data.message || 'Failed to enhance text with AI.');
+  }
+  return data.enhancedText;
+}
+
 export function getBrowserVoices() {
   if (!('speechSynthesis' in window)) return [];
 
