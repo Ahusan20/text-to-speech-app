@@ -1,13 +1,24 @@
 import { useEffect, useMemo, useState } from 'react';
-import { History, Sparkles, Upload, Waves } from 'lucide-react';
+import { History, LogIn, LogOut, Sparkles, Upload, User, Waves } from 'lucide-react';
 import TextInput from '../components/TextInput.jsx';
 import LanguageSelector from '../components/LanguageSelector.jsx';
 import VoiceSelector from '../components/VoiceSelector.jsx';
 import GenerateButton from '../components/GenerateButton.jsx';
 import AudioPlayer from '../components/AudioPlayer.jsx';
 import ErrorMessage from '../components/ErrorMessage.jsx';
+import AuthModal from '../components/AuthModal.jsx';
 import { getVoices, convertTextToSpeech, getBrowserVoices, enhanceTextWithAi } from '../services/api.js';
 import { extractTextFromFile } from '../utils/documentParser.js';
+import {
+  getCurrentUser,
+  signOutUser,
+  fetchCloudHistory,
+  saveCloudHistory,
+  fetchCloudFavorites,
+  addCloudFavorite,
+  removeCloudFavorite,
+  isSupabaseConfigured,
+} from '../services/supabase.js';
 
 const MAX_CHARACTERS = 500;
 
@@ -22,6 +33,8 @@ export default function Home() {
   const [aiLoading, setAiLoading] = useState(false);
   const [error, setError] = useState('');
   const [browserMode, setBrowserMode] = useState(() => window.location.hostname.endsWith('github.io'));
+  const [user, setUser] = useState(null);
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [history, setHistory] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem('vox-history') || '[]');
@@ -39,9 +52,18 @@ export default function Home() {
   const favorite = favorites.includes(text);
 
   function toggleFavorite() {
+    const nextFavorite = !favorite;
     const updated = favorite ? favorites.filter((item) => item !== text) : [text, ...favorites].slice(0, 20);
     setFavorites(updated);
     localStorage.setItem('vox-favorites', JSON.stringify(updated));
+
+    if (user) {
+      if (nextFavorite) {
+        addCloudFavorite(user.id, text, voice);
+      } else {
+        removeCloudFavorite(user.id, text);
+      }
+    }
   }
 
   useEffect(() => {
@@ -71,6 +93,23 @@ export default function Home() {
       loadBrowserVoices();
     }
     window.speechSynthesis?.addEventListener('voiceschanged', loadBrowserVoices);
+
+    getCurrentUser().then(async (currentUser) => {
+      if (currentUser && active) {
+        setUser(currentUser);
+        try {
+          const [cloudHistory, cloudFavs] = await Promise.all([
+            fetchCloudHistory(currentUser.id),
+            fetchCloudFavorites(currentUser.id),
+          ]);
+          if (cloudHistory.length > 0 && active) setHistory(cloudHistory);
+          if (cloudFavs.length > 0 && active) setFavorites(cloudFavs);
+        } catch (e) {
+          console.warn('Could not sync user cloud data:', e);
+        }
+      }
+    });
+
     return () => {
       active = false;
       window.speechSynthesis?.removeEventListener('voiceschanged', loadBrowserVoices);
@@ -115,6 +154,9 @@ export default function Home() {
         const data = await convertTextToSpeech({ text, language, voice });
         setAudioUrl(data.audioUrl);
         setAudioFormat(data.format);
+        if (user && data.audioUrl) {
+          saveCloudHistory(user.id, { text, language, voice, audioUrl: data.audioUrl });
+        }
       }
       const nextHistory = [{ text, language, createdAt: Date.now() }, ...history].slice(0, 10);
       setHistory(nextHistory);
@@ -183,8 +225,35 @@ export default function Home() {
           </span>
           <span>Vox Studio</span>
         </a>
-        <div className="status">
-          <span /> System ready
+        <div className="topbar-actions">
+          <div className="status">
+            <span /> System ready
+          </div>
+          {user ? (
+            <div className="user-profile">
+              <span className="user-badge" title={user.email}>
+                <User size={13} /> {user.email?.split('@')[0] || 'User'}
+              </span>
+              <button
+                className="auth-btn"
+                type="button"
+                onClick={async () => {
+                  await signOutUser();
+                  setUser(null);
+                }}
+              >
+                <LogOut size={13} /> Sign out
+              </button>
+            </div>
+          ) : (
+            <button
+              className="auth-btn sign-in"
+              type="button"
+              onClick={() => setIsAuthOpen(true)}
+            >
+              <LogIn size={13} /> {isSupabaseConfigured ? 'Sign in' : 'Sign in (Cloud sync)'}
+            </button>
+          )}
         </div>
       </header>
 
@@ -278,7 +347,10 @@ export default function Home() {
         />
         {history.length > 0 && (
           <section className="history-card" aria-label="Recent speech history">
-            <div className="history-title"><History size={15} /> Recent texts <span>Stored on this device</span></div>
+            <div className="history-title">
+              <History size={15} /> Recent texts{' '}
+              <span>{user ? 'Synced with Supabase' : 'Stored locally on this device'}</span>
+            </div>
             {history.slice(0, 5).map((item) => (
               <button type="button" className="history-item" key={item.createdAt} onClick={() => { setText(item.text); setLanguage(item.language); }}>
                 {item.text}
@@ -288,7 +360,10 @@ export default function Home() {
         )}
         {favorites.length > 0 && (
           <section className="history-card" aria-label="Favorite texts">
-            <div className="history-title">★ Favorites <span>Stored on this device</span></div>
+            <div className="history-title">
+              ★ Favorites{' '}
+              <span>{user ? 'Synced with Supabase' : 'Stored locally on this device'}</span>
+            </div>
             {favorites.slice(0, 5).map((item) => (
               <button type="button" className="history-item" key={item} onClick={() => setText(item)}>
                 {item}
@@ -297,6 +372,12 @@ export default function Home() {
           </section>
         )}
       </section>
+
+      <AuthModal
+        isOpen={isAuthOpen}
+        onClose={() => setIsAuthOpen(false)}
+        onAuthSuccess={(authenticatedUser) => setUser(authenticatedUser)}
+      />
     </main>
   );
 }

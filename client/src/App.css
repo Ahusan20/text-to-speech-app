@@ -518,6 +518,234 @@ input[type="range"]::-webkit-slider-thumb {
 .download-button:hover { background: #f4f7f2; }
 audio { display: none; }
 
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-profile {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.user-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #384239;
+  background: #edf3ea;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid #dce4d9;
+}
+
+.auth-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid #dfe5da;
+  background: #fff;
+  color: #49544c;
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.auth-btn:hover {
+  background: #f4f7f2;
+}
+
+.auth-btn.sign-in {
+  background: #1d5a42;
+  color: #fff;
+  border-color: #1d5a42;
+}
+
+.auth-btn.sign-in:hover {
+  background: #174e39;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(18, 25, 20, 0.45);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  padding: 16px;
+}
+
+.modal-content {
+  background: #fff;
+  border: 1px solid #e1e7dc;
+  border-radius: 14px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.15);
+  width: 100%;
+  max-width: 400px;
+  padding: 22px;
+  position: relative;
+  animation: modalFadeIn 200ms ease;
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; transform: scale(0.97) translateY(8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 750;
+  color: #1e261f;
+}
+
+.modal-close {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  color: #768176;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-close:hover { color: #1e261f; }
+
+.modal-subtitle {
+  margin: 0 0 16px;
+  font-size: 12px;
+  color: #6b776c;
+  line-height: 1.45;
+}
+
+.modal-alert {
+  padding: 9px 12px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 14px;
+}
+
+.modal-alert.error {
+  background: #fdf2f0;
+  color: #9c3f2b;
+  border: 1px solid #f8d7d0;
+}
+
+.modal-alert.notice {
+  background: #f0f7f2;
+  color: #226743;
+  border: 1px solid #d4ebdc;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.auth-field label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #49544b;
+}
+
+.auth-field .input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.auth-field .input-wrap svg {
+  position: absolute;
+  left: 11px;
+  color: #879488;
+  pointer-events: none;
+}
+
+.auth-field .input-wrap input {
+  width: 100%;
+  height: 40px;
+  padding: 0 12px 0 34px;
+  border: 1px solid #d8dfd5;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #202720;
+  background: #fbfcf9;
+  outline: none;
+}
+
+.auth-field .input-wrap input:focus {
+  border-color: #89a897;
+  box-shadow: 0 0 0 3px rgba(119, 150, 130, 0.12);
+}
+
+.auth-submit-button {
+  height: 42px;
+  background: #1d5a42;
+  color: #fff;
+  border: 0;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin-top: 4px;
+  transition: background 150ms ease;
+}
+
+.auth-submit-button:hover:not(:disabled) {
+  background: #174e39;
+}
+
+.auth-submit-button:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.modal-footer {
+  margin-top: 14px;
+  text-align: center;
+  font-size: 12px;
+  color: #69766a;
+}
+
+.modal-footer button {
+  border: 0;
+  background: transparent;
+  color: #1d5a42;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+}
+
 @media (max-width: 720px) {
   .topbar { height: 66px; padding-inline: 20px; }
   .status { display: none; }
