@@ -57,6 +57,13 @@ export async function createTts(req, res) {
       });
     }
 
+    if (error.code === 'VOICE_UNAVAILABLE') {
+      return res.status(422).json({
+        success: false,
+        message: 'No installed Windows voice matches the selected language and gender.',
+      });
+    }
+
     return res.status(503).json({
       success: false,
       message: 'The text-to-speech service is unavailable. Please try again.',

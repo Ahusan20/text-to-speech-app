@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import test, { before, after } from 'node:test';
+import { buildSapiVoiceSelectionScript } from '../services/ttsService.js';
 
 const baseUrl = 'http://127.0.0.1:5124';
 let server;
@@ -23,6 +24,19 @@ before(async () => {
 });
 
 after(() => server?.kill());
+
+test('Windows SAPI selection matches the requested culture and gender', () => {
+  const script = buildSapiVoiceSelectionScript({
+    language: 'hi-IN',
+    gender: 'Female',
+  });
+
+  assert.match(script, /\$cultureName = 'hi-IN'/);
+  assert.match(script, /VoiceInfo\.Culture\.Name -eq \$cultureName/);
+  assert.match(script, /TwoLetterISOLanguageName -eq \$languageCode/);
+  assert.match(script, /VoiceInfo\.Gender -eq \$desiredGender/);
+  assert.match(script, /TTS_VOICE_UNAVAILABLE/);
+});
 
 test('GET /api/health returns healthy status', async () => {
   const response = await fetch(`${baseUrl}/api/health`);

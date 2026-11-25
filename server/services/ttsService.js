@@ -65,7 +65,6 @@ export async function generateWithWindowsSapi(text, selectedVoice, speed = 1) {
   const filename = `${id}.wav`;
   const outputPath = path.join(audioDirectory, filename);
   const textEncoded = Buffer.from(text, 'utf16le').toString('base64');
-  const gender = selectedVoice.gender.toLowerCase();
 
   // Convert speed (0.5x - 2x) to SAPI Rate (-10 to 10, default 0)
   const rate = Math.max(-10, Math.min(10, Math.round((speed - 1) * 10)));
@@ -74,13 +73,8 @@ export async function generateWithWindowsSapi(text, selectedVoice, speed = 1) {
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Speech
 $text = [Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('${textEncoded.replaceAll("'", "''")}'))
-$genderName = '${gender}'
 $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer
-if ($genderName -eq 'male') {
-  $synth.SelectVoiceByHints([System.Speech.Synthesis.VoiceGender]::Male)
-} else {
-  $synth.SelectVoiceByHints([System.Speech.Synthesis.VoiceGender]::Female)
-}
+${buildSapiVoiceSelectionScript(selectedVoice)}
 $synth.Rate = ${rate}
 $synth.Volume = 100
 $synth.SetOutputToWaveFile('${outputPath.replaceAll("'", "''")}')
@@ -94,13 +88,51 @@ $synth.Dispose()
       ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', script],
       { windowsHide: true, timeout: 120000 },
       (error, _stdout, stderr) => {
-        if (error) return reject(new Error(stderr || error.message));
+        if (error) {
+          const message = stderr || error.message;
+          const generationError = new Error(message);
+          if (message.includes('TTS_VOICE_UNAVAILABLE')) {
+            generationError.code = 'VOICE_UNAVAILABLE';
+          }
+          return reject(generationError);
+        }
         return resolve();
       },
     );
   });
 
   return { audioUrl: `/audio/${filename}`, format: 'audio/wav' };
+}
+
+export function buildSapiVoiceSelectionScript(selectedVoice) {
+  const cultureName = selectedVoice.language.replaceAll("'", "''");
+  const gender = selectedVoice.gender.toLowerCase();
+
+  return `
+$cultureName = '${cultureName}'
+$genderName = '${gender}'
+$desiredGender = if ($genderName -eq 'male') {
+  [System.Speech.Synthesis.VoiceGender]::Male
+} else {
+  [System.Speech.Synthesis.VoiceGender]::Female
+}
+$installedVoices = $synth.GetInstalledVoices() | Where-Object {
+  $_.Enabled -and $_.VoiceInfo.Gender -eq $desiredGender
+}
+$matchingVoice = $installedVoices | Where-Object {
+  $_.VoiceInfo.Culture.Name -eq $cultureName
+} | Select-Object -First 1
+if (-not $matchingVoice) {
+  $languageCode = [System.Globalization.CultureInfo]::GetCultureInfo($cultureName).TwoLetterISOLanguageName
+  $matchingVoice = $installedVoices | Where-Object {
+    $_.VoiceInfo.Culture.TwoLetterISOLanguageName -eq $languageCode
+  } | Select-Object -First 1
+}
+if (-not $matchingVoice) {
+  throw 'TTS_VOICE_UNAVAILABLE'
+}
+$synth.SelectVoice($matchingVoice.VoiceInfo.Name)
+`;
 }
 
 export async function cleanupExpiredAudio(maxAgeMinutes = 30) {
