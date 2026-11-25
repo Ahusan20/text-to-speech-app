@@ -18,7 +18,7 @@ export default function Home() {
   const [audioUrl, setAudioUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [browserMode, setBrowserMode] = useState(false);
+  const [browserMode, setBrowserMode] = useState(() => window.location.hostname.endsWith('github.io'));
   const [history, setHistory] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem('vox-history') || '[]');
@@ -60,7 +60,10 @@ export default function Home() {
           const defaultVoice = data.find((item) => item.language === 'en-US');
           setVoice(defaultVoice?.id || '');
         })
-        .catch(() => loadBrowserVoices());
+        .catch(() => {
+          setBrowserMode(true);
+          loadBrowserVoices();
+        });
     } else {
       loadBrowserVoices();
     }
@@ -102,12 +105,7 @@ export default function Home() {
         if (!('speechSynthesis' in window)) {
           throw new Error('This browser does not support speech synthesis.');
         }
-        const selected = languageVoices.find((item) => item.id === voice);
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = selected?.language || language;
-        if (selected?.nativeVoice) utterance.voice = selected.nativeVoice;
         window.speechSynthesis.cancel();
-        window.speechSynthesis.speak(utterance);
         setAudioUrl('browser-speech');
       } else {
         const data = await convertTextToSpeech({ text, language, voice });
@@ -145,7 +143,7 @@ export default function Home() {
   return (
     <main className="app-shell">
       <header className="topbar">
-        <a className="brand" href="/" aria-label="Vox Studio home">
+        <a className="brand" href={import.meta.env.BASE_URL} aria-label="Vox Studio home">
           <span className="brand-mark">
             <Waves size={21} strokeWidth={2.4} />
           </span>

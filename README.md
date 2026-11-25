@@ -8,6 +8,9 @@ A full-stack React and Express text-to-speech application.
 - Language and voice selection
 - Text validation and API error handling
 - Browser audio playback, seeking, volume, and download
+- Free browser speech mode, local history, and favorites
+- Text file import
+- Speech rate and pitch controls in browser mode
 - ElevenLabs integration or Windows SAPI fallback
 - Rate limiting and temporary audio-file cleanup
 
@@ -32,6 +35,14 @@ npm.cmd run dev
 ```
 
 The API runs at `http://localhost:5000`.
+
+## Free public demo
+
+Source: [GitHub repository](https://github.com/Ahusan20/text-to-speech-app).  
+Live frontend: [GitHub Pages](https://ahusan20.github.io/text-to-speech-app/).
+It uses the browser's built-in speech synthesis and stores recent texts and favorites
+locally on the current device. In this free mode, speech playback is available but
+audio download and seeking are not; use the local Windows SAPI backend for downloadable WAV audio.
 
 ## Environment
 
