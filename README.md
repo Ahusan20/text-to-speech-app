@@ -10,7 +10,7 @@ A full-stack React and Express text-to-speech application.
 - Browser audio playback, seeking, volume, and download
 - Free browser speech mode, local history, and favorites
 - Text file import
-- Speech rate and pitch controls in browser mode
+- Speech rate, pitch, and volume controls in browser mode
 - ElevenLabs integration or Windows SAPI fallback
 - Rate limiting and temporary audio-file cleanup
 

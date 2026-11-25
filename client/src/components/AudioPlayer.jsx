@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Check, Pause, Play, Volume2, VolumeX } from 'lucide-react';
 import DownloadButton from './DownloadButton.jsx';
+import { getAudioFilename } from '../utils/audioFormat.js';
 
 function formatTime(seconds) {
   if (!Number.isFinite(seconds)) return '0:00';
@@ -9,7 +10,7 @@ function formatTime(seconds) {
   return `${minutes}:${remaining.toString().padStart(2, '0')}`;
 }
 
-export default function AudioPlayer({ audioUrl, speechMode = false, text = '', voice }) {
+export default function AudioPlayer({ audioUrl, audioFormat, speechMode = false, text = '', voice }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
@@ -113,6 +114,18 @@ export default function AudioPlayer({ audioUrl, speechMode = false, text = '', v
                 {[0.75, 1, 1.25, 1.5].map((value) => <option key={value} value={value}>{value}x</option>)}
               </select>
             </label>
+            <label className="speech-volume">Volume
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.05"
+                value={volume}
+                onChange={(event) => setVolume(Number(event.target.value))}
+                aria-label="Speech volume"
+                style={{ '--progress': `${volume * 100}%` }}
+              />
+            </label>
             <span className="browser-playback-note">Playback uses a voice installed in your browser. Audio download is unavailable in browser speech mode.</span>
           </div>
         ) : (
@@ -154,7 +167,7 @@ export default function AudioPlayer({ audioUrl, speechMode = false, text = '', v
           style={{ '--progress': `${volume * 100}%` }}
         />}
 
-        {!speechMode && <DownloadButton audioUrl={audioUrl} />}
+        {!speechMode && <DownloadButton audioUrl={audioUrl} filename={getAudioFilename(audioFormat)} />}
       </div>
 
       {!speechMode && <audio

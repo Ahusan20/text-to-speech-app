@@ -81,3 +81,23 @@ test('POST /api/tts rejects invalid language', async () => {
   assert.equal(response.status, 400);
   assert.match((await response.json()).message, /Unsupported language/i);
 });
+
+test('POST /api/tts rejects a voice that does not match the selected language', async () => {
+  const response = await fetch(`${baseUrl}/api/tts`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text: 'Hello', language: 'hi-IN', voice: 'sapi-female' }),
+  });
+  assert.equal(response.status, 400);
+  assert.match((await response.json()).message, /does not belong to this language/i);
+});
+
+test('POST /api/tts requires an application/json content type', async () => {
+  const response = await fetch(`${baseUrl}/api/tts`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: 'Hello',
+  });
+  assert.equal(response.status, 415);
+  assert.match((await response.json()).message, /Content-Type must be application\/json/i);
+});

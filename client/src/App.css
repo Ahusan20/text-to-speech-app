@@ -350,6 +350,10 @@ textarea::placeholder { color: #adb4aa; }
   font-size: 11px;
 }
 
+.speech-volume input[type="range"] {
+  width: 88px;
+}
+
 .browser-playback-note {
   flex-basis: 100%;
   color: #939b91;

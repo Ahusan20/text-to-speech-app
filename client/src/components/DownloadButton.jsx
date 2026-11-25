@@ -1,6 +1,6 @@
 import { Download } from 'lucide-react';
 
-export default function DownloadButton({ audioUrl, filename = 'speech.wav' }) {
+export default function DownloadButton({ audioUrl, filename }) {
   if (!audioUrl) return null;
 
   return (

@@ -16,6 +16,7 @@ export default function Home() {
   const [voices, setVoices] = useState([]);
   const [voice, setVoice] = useState('');
   const [audioUrl, setAudioUrl] = useState('');
+  const [audioFormat, setAudioFormat] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [browserMode, setBrowserMode] = useState(() => window.location.hostname.endsWith('github.io'));
@@ -99,6 +100,7 @@ export default function Home() {
 
     setLoading(true);
     setAudioUrl('');
+    setAudioFormat('');
 
     try {
       if (window.location.hostname.endsWith('github.io') || browserMode) {
@@ -110,6 +112,7 @@ export default function Home() {
       } else {
         const data = await convertTextToSpeech({ text, language, voice });
         setAudioUrl(data.audioUrl);
+        setAudioFormat(data.format);
       }
       const nextHistory = [{ text, language, createdAt: Date.now() }, ...history].slice(0, 10);
       setHistory(nextHistory);
@@ -207,6 +210,7 @@ export default function Home() {
         <AudioPlayer
           key={audioUrl}
           audioUrl={audioUrl}
+          audioFormat={audioFormat}
           speechMode={audioUrl === 'browser-speech'}
           text={text}
           voice={languageVoices.find((item) => item.id === voice)}
