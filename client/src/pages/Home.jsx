@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Waves } from 'lucide-react';
+import { History, Upload, Waves } from 'lucide-react';
 import TextInput from '../components/TextInput.jsx';
 import LanguageSelector from '../components/LanguageSelector.jsx';
 import VoiceSelector from '../components/VoiceSelector.jsx';
 import GenerateButton from '../components/GenerateButton.jsx';
 import AudioPlayer from '../components/AudioPlayer.jsx';
 import ErrorMessage from '../components/ErrorMessage.jsx';
-import { getVoices, convertTextToSpeech } from '../services/api.js';
+import { getVoices, convertTextToSpeech, getBrowserVoices } from '../services/api.js';
 
 const MAX_CHARACTERS = 500;
 
@@ -18,17 +18,57 @@ export default function Home() {
   const [audioUrl, setAudioUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [browserMode, setBrowserMode] = useState(false);
+  const [history, setHistory] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('vox-history') || '[]');
+    } catch {
+      return [];
+    }
+  });
+  const [favorites, setFavorites] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('vox-favorites') || '[]');
+    } catch {
+      return [];
+    }
+  });
+  const favorite = favorites.includes(text);
+
+  function toggleFavorite() {
+    const updated = favorite ? favorites.filter((item) => item !== text) : [text, ...favorites].slice(0, 20);
+    setFavorites(updated);
+    localStorage.setItem('vox-favorites', JSON.stringify(updated));
+  }
 
   useEffect(() => {
-    getVoices()
-      .then((data) => {
-        setVoices(data);
-        const defaultVoice = data.find((item) => item.language === 'en-US');
-        setVoice(defaultVoice?.id || '');
-      })
-      .catch((err) => {
-        setError(err.message || 'Could not load available voices.');
-      });
+    const hasBackend = !window.location.hostname.endsWith('github.io');
+    let active = true;
+    const loadBrowserVoices = () => {
+      const available = getBrowserVoices();
+      if (!active) return;
+      setVoices(available);
+      const defaultVoice = available.find((item) => item.language.toLowerCase().startsWith('en'));
+      setVoice(defaultVoice?.id || available[0]?.id || '');
+    };
+
+    if (hasBackend) {
+      getVoices()
+        .then((data) => {
+          if (!active) return;
+          setVoices(data);
+          const defaultVoice = data.find((item) => item.language === 'en-US');
+          setVoice(defaultVoice?.id || '');
+        })
+        .catch(() => loadBrowserVoices());
+    } else {
+      loadBrowserVoices();
+    }
+    window.speechSynthesis?.addEventListener('voiceschanged', loadBrowserVoices);
+    return () => {
+      active = false;
+      window.speechSynthesis?.removeEventListener('voiceschanged', loadBrowserVoices);
+    };
   }, []);
 
   const languageVoices = useMemo(
@@ -58,8 +98,24 @@ export default function Home() {
     setAudioUrl('');
 
     try {
-      const data = await convertTextToSpeech({ text, language, voice });
-      setAudioUrl(data.audioUrl);
+      if (window.location.hostname.endsWith('github.io') || browserMode) {
+        if (!('speechSynthesis' in window)) {
+          throw new Error('This browser does not support speech synthesis.');
+        }
+        const selected = languageVoices.find((item) => item.id === voice);
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = selected?.language || language;
+        if (selected?.nativeVoice) utterance.voice = selected.nativeVoice;
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak(utterance);
+        setAudioUrl('browser-speech');
+      } else {
+        const data = await convertTextToSpeech({ text, language, voice });
+        setAudioUrl(data.audioUrl);
+      }
+      const nextHistory = [{ text, language, createdAt: Date.now() }, ...history].slice(0, 10);
+      setHistory(nextHistory);
+      localStorage.setItem('vox-history', JSON.stringify(nextHistory));
     } catch (requestError) {
       setError(requestError.message || 'Failed to generate speech.');
     } finally {
@@ -71,6 +127,19 @@ export default function Home() {
     setLanguage(nextLanguage);
     const nextVoice = voices.find((item) => item.language === nextLanguage);
     setVoice(nextVoice?.id || '');
+  }
+
+  async function handleFileUpload(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith('.txt')) {
+      setError('For free browser mode, upload a plain text (.txt) file.');
+      return;
+    }
+    const content = await file.text();
+    setText(content.slice(0, MAX_CHARACTERS));
+    setError(content.length > MAX_CHARACTERS ? 'Only the first 500 characters were loaded.' : '');
+    event.target.value = '';
   }
 
   return (
@@ -102,6 +171,19 @@ export default function Home() {
           }}
           maxLength={MAX_CHARACTERS}
         />
+        <div className="utility-row">
+          <label className="upload-button">
+            <Upload size={15} /> Upload TXT
+            <input type="file" accept=".txt,text/plain" onChange={handleFileUpload} />
+          </label>
+          <label className="browser-mode-toggle">
+            <input type="checkbox" checked={browserMode} onChange={(event) => setBrowserMode(event.target.checked)} />
+            Free browser speech
+          </label>
+          <button className={`favorite-button${favorite ? ' active' : ''}`} type="button" onClick={toggleFavorite} disabled={!text.trim()}>
+            {favorite ? '★ Saved' : '☆ Favorite'}
+          </button>
+        </div>
 
         <ErrorMessage message={error} />
 
@@ -124,7 +206,33 @@ export default function Home() {
           />
         </div>
 
-        <AudioPlayer key={audioUrl} audioUrl={audioUrl} />
+        <AudioPlayer
+          key={audioUrl}
+          audioUrl={audioUrl}
+          speechMode={audioUrl === 'browser-speech'}
+          text={text}
+          voice={languageVoices.find((item) => item.id === voice)}
+        />
+        {history.length > 0 && (
+          <section className="history-card" aria-label="Recent speech history">
+            <div className="history-title"><History size={15} /> Recent texts <span>Stored on this device</span></div>
+            {history.slice(0, 5).map((item) => (
+              <button type="button" className="history-item" key={item.createdAt} onClick={() => { setText(item.text); setLanguage(item.language); }}>
+                {item.text}
+              </button>
+            ))}
+          </section>
+        )}
+        {favorites.length > 0 && (
+          <section className="history-card" aria-label="Favorite texts">
+            <div className="history-title">★ Favorites <span>Stored on this device</span></div>
+            {favorites.slice(0, 5).map((item) => (
+              <button type="button" className="history-item" key={item} onClick={() => setText(item)}>
+                {item}
+              </button>
+            ))}
+          </section>
+        )}
       </section>
     </main>
   );

@@ -32,3 +32,15 @@ export async function checkHealth() {
   const data = await response.json();
   return data;
 }
+
+export function getBrowserVoices() {
+  if (!('speechSynthesis' in window)) return [];
+
+  return window.speechSynthesis.getVoices().map((voice, index) => ({
+    id: `browser-${index}`,
+    name: voice.name,
+    language: voice.lang,
+    gender: 'Browser',
+    nativeVoice: voice,
+  }));
+}
