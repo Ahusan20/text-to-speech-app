@@ -1,0 +1,11 @@
+{
+  "name": "text-to-speech-project",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "presentation": "node scripts/create-presentation.js"
+  },
+  "dependencies": {
+    "pptxgenjs": "^4.0.1"
+  }
+}
