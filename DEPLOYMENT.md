@@ -1,5 +1,14 @@
 # Deployment
 
+## Free frontend - GitHub Pages
+
+The public, zero-cost demo deploys automatically from `main` through GitHub Actions:
+
+https://ahusan20.github.io/text-to-speech-app/
+
+It uses the browser's built-in speech voices and local browser storage. The browser
+does not provide an audio file for download in this mode.
+
 ## Frontend - Vercel
 
 1. Import this repository in Vercel.
@@ -11,10 +20,10 @@
 
 ## Backend - Render
 
-1. Import this repository in Render.
+1. Import this repository in Render (the blueprint requests its free plan).
 2. Render can use `render.yaml`.
 3. Set `CORS_ORIGIN` to the Vercel frontend URL.
-4. Set ElevenLabs credentials for Linux hosting.
+4. Set ElevenLabs credentials for Linux-hosted file generation, if required.
 5. Windows Speech SAPI is only available for local Windows development.
 
 ## Required Environment Variables

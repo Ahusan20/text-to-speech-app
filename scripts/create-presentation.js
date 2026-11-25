@@ -11,12 +11,12 @@ const slides = [
   ['Text-to-Speech Application', 'React + Node.js + Express', 'Vox Studio'],
   ['Problem', 'Converts large or difficult written text into accessible spoken audio.', 'Text Input'],
   ['Objectives', 'Learn React, REST APIs, backend validation, third-party TTS integration, and secure credential handling.', 'Learning'],
-  ['System Architecture', 'React UI -> Express REST API -> TTS Provider -> Audio response -> Browser player', 'Flow'],
-  ['Implemented Features', 'Text and word counts | 500-character limit | Language and voice selection | Generate, play, seek, mute, and download', 'Features'],
+  ['System Architecture', 'Free public frontend: GitHub Pages + browser speech synthesis | Local backend: Express + Windows SAPI or optional ElevenLabs', 'Flow'],
+  ['Implemented Features', 'Text and word counts | Language and voice selection | Browser speech | Playback rate and pitch | TXT import | Local history and favorites', 'Features'],
   ['API Endpoints', 'GET /api/health | GET /api/voices | POST /api/tts', 'Backend'],
   ['Security', 'Environment credentials | CORS | Rate limiting | Input validation | Temporary audio cleanup', 'Security'],
-  ['Testing', 'API validation tested | Successful Windows SAPI generation tested | Frontend build and lint passed', 'Quality'],
-  ['Demo', 'Enter text -> Select language and voice -> Generate speech -> Play or download', 'Walkthrough'],
+  ['Testing', '5 API tests pass | Local Windows SAPI generation tested | Frontend lint/build pass | GitHub Pages deployment verified', 'Quality'],
+  ['Demo', 'Enter text -> Select an installed browser voice -> Generate -> Play -> Adjust speed or pitch', 'Walkthrough'],
   ['Conclusion', 'A complete Level 1 project demonstrating full-stack communication and TTS integration.', 'Summary'],
 ];
 
