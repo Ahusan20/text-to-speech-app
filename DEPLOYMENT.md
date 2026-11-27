@@ -47,10 +47,12 @@ provider may incur charges under its own pricing. Add `GEMINI_API_KEY` only afte
 confirming its current terms and billing; AI enhancement controls stay disabled
 until this key is configured. Add `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and
 `SUPABASE_STORAGE_BUCKET` for durable audio uploads. The legacy service-role JWT is
-preferred for Storage uploads; `SUPABASE_SECRET_KEY` remains supported as a
-fallback. Keep all backend credentials exclusively in Vercel's backend environment
-settings. Windows Speech SAPI is only available for local Windows development. The
-deployed backend uses Google TTS unless ElevenLabs is configured.
+preferred for Storage uploads. Although `SUPABASE_SECRET_KEY` is sent using the
+new API-key header, this project's Storage endpoint treated that request as
+anonymous and rejected it under RLS, so it only falls back to inline audio.
+Keep all backend credentials exclusively in Vercel's backend environment settings.
+Windows Speech SAPI is only available for local Windows development. The deployed
+backend uses Google TTS unless ElevenLabs is configured.
 
 ## Backend Environment Variables
 
@@ -70,4 +72,5 @@ Only add optional provider credentials after confirming their pricing and terms.
 3. Add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` to the frontend deployment.
 4. For durable audio uploads, add `SUPABASE_URL`,
    `SUPABASE_SERVICE_ROLE_KEY`, and `SUPABASE_STORAGE_BUCKET=speech-audio` to the
-   backend deployment. Do not expose the service-role key to the browser.
+   backend deployment. The new `SUPABASE_SECRET_KEY` alone is not sufficient for
+   this project's Storage endpoint. Do not expose the service-role key to the browser.
