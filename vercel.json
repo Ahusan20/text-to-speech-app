@@ -2,9 +2,5 @@
   "framework": "vite",
   "buildCommand": "cd client && npm install && npm run build",
   "outputDirectory": "client/dist",
-  "installCommand": "npm install",
-  "rewrites": [
-    { "source": "/api/(.*)", "destination": "https://YOUR_RENDER_SERVICE.onrender.com/api/$1" },
-    { "source": "/audio/(.*)", "destination": "https://YOUR_RENDER_SERVICE.onrender.com/audio/$1" }
-  ]
+  "installCommand": "npm install"
 }

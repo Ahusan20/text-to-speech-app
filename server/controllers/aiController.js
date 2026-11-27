@@ -18,6 +18,12 @@ export async function handleAiEnhance(req, res) {
   }
 
   const validModes = ['summarize', 'grammar', 'conversational', 'rewrite'];
+  if (mode !== undefined && !validModes.includes(mode)) {
+    return res.status(400).json({
+      success: false,
+      message: 'Unsupported AI enhancement mode.',
+    });
+  }
   const selectedMode = validModes.includes(mode) ? mode : 'conversational';
 
   try {

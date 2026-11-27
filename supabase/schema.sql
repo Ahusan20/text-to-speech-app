@@ -3,6 +3,18 @@
 -- Sections 5, 13, 16 & 35: PostgreSQL Database, Supabase Auth & Cloud Storage
 -- ==============================================================================
 
+-- 0. STORAGE OBJECTS
+-- The backend uploads with the service-role key, which bypasses RLS. Public
+-- reads are intentional because generated audio URLs are shared with the app.
+insert into storage.buckets (id, name, public)
+values ('speech-audio', 'speech-audio', true)
+on conflict (id) do update set public = excluded.public;
+
+drop policy if exists "Public Access for Speech Audio" on storage.objects;
+create policy "Public Access for Speech Audio"
+  on storage.objects for select
+  using (bucket_id = 'speech-audio');
+
 -- 1. SPEECH HISTORY TABLE
 create table if not exists public.speech_history (
   id uuid primary key default gen_random_uuid(),
@@ -18,16 +30,19 @@ create table if not exists public.speech_history (
 alter table public.speech_history enable row level security;
 
 -- Strict RLS Policies for speech_history: users can only see & insert their own data
+drop policy if exists "Users can view their own speech history" on public.speech_history;
 create policy "Users can view their own speech history"
   on public.speech_history
   for select
   using (auth.uid() = user_id);
 
+drop policy if exists "Users can insert into their own speech history" on public.speech_history;
 create policy "Users can insert into their own speech history"
   on public.speech_history
   for insert
   with check (auth.uid() = user_id);
 
+drop policy if exists "Users can delete their own speech history" on public.speech_history;
 create policy "Users can delete their own speech history"
   on public.speech_history
   for delete
@@ -51,32 +66,20 @@ create table if not exists public.favorites (
 alter table public.favorites enable row level security;
 
 -- Strict RLS Policies for favorites
+drop policy if exists "Users can view their own favorites" on public.favorites;
 create policy "Users can view their own favorites"
   on public.favorites
   for select
   using (auth.uid() = user_id);
 
+drop policy if exists "Users can insert their own favorites" on public.favorites;
 create policy "Users can insert their own favorites"
   on public.favorites
   for insert
   with check (auth.uid() = user_id);
 
+drop policy if exists "Users can delete their own favorites" on public.favorites;
 create policy "Users can delete their own favorites"
   on public.favorites
   for delete
   using (auth.uid() = user_id);
-
-
--- 3. STORAGE BUCKET CONFIGURATION (for durable audio files)
--- To execute in Supabase SQL editor:
-insert into storage.buckets (id, name, public)
-values ('speech-audio', 'speech-audio', true)
-on conflict (id) do nothing;
-
-create policy "Public Access for Speech Audio"
-  on storage.objects for select
-  using (bucket_id = 'speech-audio');
-
-create policy "Authenticated Users & Service Role Upload Access"
-  on storage.objects for insert
-  with check (bucket_id = 'speech-audio');

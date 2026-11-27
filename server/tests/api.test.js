@@ -92,6 +92,16 @@ test('POST /api/tts rejects a voice that does not match the selected language', 
   assert.match((await response.json()).message, /does not belong to this language/i);
 });
 
+test('POST /api/tts rejects unprintable control characters', async () => {
+  const response = await fetch(`${baseUrl}/api/tts`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text: 'Hello\u0007', language: 'en-US', voice: 'sapi-female' }),
+  });
+  assert.equal(response.status, 400);
+  assert.match((await response.json()).message, /control characters/i);
+});
+
 test('POST /api/tts requires an application/json content type', async () => {
   const response = await fetch(`${baseUrl}/api/tts`, {
     method: 'POST',
@@ -100,6 +110,26 @@ test('POST /api/tts requires an application/json content type', async () => {
   });
   assert.equal(response.status, 415);
   assert.match((await response.json()).message, /Content-Type must be application\/json/i);
+});
+
+test('POST /api/ai/enhance rejects unsupported modes', async () => {
+  const response = await fetch(`${baseUrl}/api/ai/enhance`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text: 'Hello test', mode: 'translate' }),
+  });
+  assert.equal(response.status, 400);
+  assert.match((await response.json()).message, /Unsupported AI enhancement mode/i);
+});
+
+test('POST /api/ai/enhance rejects oversized text', async () => {
+  const response = await fetch(`${baseUrl}/api/ai/enhance`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text: 'x'.repeat(3001), mode: 'summarize' }),
+  });
+  assert.equal(response.status, 400);
+  assert.match((await response.json()).message, /3000-character limit/i);
 });
 
 test('POST /api/ai/enhance rejects empty text', async () => {

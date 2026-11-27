@@ -21,6 +21,11 @@ import {
 } from '../services/supabase.js';
 
 const MAX_CHARACTERS = 500;
+const hostname = window.location.hostname;
+const hasConfiguredApi = Boolean(import.meta.env.VITE_API_BASE_URL);
+const isLocalHost = hostname === 'localhost' || hostname === '127.0.0.1';
+const isGitHubPages = hostname.endsWith('github.io');
+const hasBackend = !isGitHubPages && (isLocalHost || hasConfiguredApi);
 
 export default function Home() {
   const [text, setText] = useState('Hello! Welcome to the Text-to-Speech App.');
@@ -32,7 +37,9 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [error, setError] = useState('');
-  const [browserMode, setBrowserMode] = useState(() => window.location.hostname.endsWith('github.io'));
+  const [browserMode, setBrowserMode] = useState(() => (
+    isGitHubPages || (!isLocalHost && !hasConfiguredApi)
+  ));
   const [user, setUser] = useState(null);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [history, setHistory] = useState(() => {
@@ -58,16 +65,16 @@ export default function Home() {
     localStorage.setItem('vox-favorites', JSON.stringify(updated));
 
     if (user) {
-      if (nextFavorite) {
-        addCloudFavorite(user.id, text, voice);
-      } else {
-        removeCloudFavorite(user.id, text);
-      }
+      const syncFavorite = nextFavorite
+        ? addCloudFavorite(user.id, text, voice)
+        : removeCloudFavorite(user.id, text);
+      syncFavorite.catch((syncError) => {
+        setError(`Favorite was updated locally, but cloud sync failed: ${syncError.message}`);
+      });
     }
   }
 
   useEffect(() => {
-    const hasBackend = !window.location.hostname.endsWith('github.io');
     let active = true;
     const loadBrowserVoices = () => {
       const available = getBrowserVoices();
@@ -105,9 +112,11 @@ export default function Home() {
           if (cloudHistory.length > 0 && active) setHistory(cloudHistory);
           if (cloudFavs.length > 0 && active) setFavorites(cloudFavs);
         } catch (e) {
-          console.warn('Could not sync user cloud data:', e);
+          if (active) setError(`Cloud sync failed: ${e.message}`);
         }
       }
+    }).catch((syncError) => {
+      if (active) setError(`Cloud sync failed: ${syncError.message}`);
     });
 
     return () => {
@@ -155,7 +164,11 @@ export default function Home() {
         setAudioUrl(data.audioUrl);
         setAudioFormat(data.format);
         if (user && data.audioUrl) {
-          saveCloudHistory(user.id, { text, language, voice, audioUrl: data.audioUrl });
+          try {
+            await saveCloudHistory(user.id, { text, language, voice, audioUrl: data.audioUrl });
+          } catch (syncError) {
+            setError(`Speech was generated, but cloud history could not be saved: ${syncError.message}`);
+          }
         }
       }
       const nextHistory = [{ text, language, createdAt: Date.now() }, ...history].slice(0, 10);
@@ -238,8 +251,12 @@ export default function Home() {
                 className="auth-btn"
                 type="button"
                 onClick={async () => {
-                  await signOutUser();
-                  setUser(null);
+                  try {
+                    await signOutUser();
+                    setUser(null);
+                  } catch (signOutError) {
+                    setError(`Could not sign out: ${signOutError.message}`);
+                  }
                 }}
               >
                 <LogOut size={13} /> Sign out
@@ -250,8 +267,10 @@ export default function Home() {
               className="auth-btn sign-in"
               type="button"
               onClick={() => setIsAuthOpen(true)}
+              disabled={!isSupabaseConfigured}
+              title={!isSupabaseConfigured ? 'Cloud sync is not configured for this deployment.' : undefined}
             >
-              <LogIn size={13} /> {isSupabaseConfigured ? 'Sign in' : 'Sign in (Cloud sync)'}
+              <LogIn size={13} /> {isSupabaseConfigured ? 'Sign in' : 'Cloud sync unavailable'}
             </button>
           )}
         </div>
@@ -282,8 +301,8 @@ export default function Home() {
               className="ai-button"
               type="button"
               onClick={() => handleAiEnhance('conversational')}
-              disabled={aiLoading || !text.trim()}
-              title="Convert text into warm, conversational speech"
+              disabled={!hasBackend || aiLoading || !text.trim()}
+              title={hasBackend ? 'Convert text into warm, conversational speech' : 'AI enhancement requires a configured backend.'}
             >
               <Sparkles size={14} />
               {aiLoading ? 'Enhancing...' : 'Conversational'}
@@ -292,8 +311,8 @@ export default function Home() {
               className="ai-sub-button"
               type="button"
               onClick={() => handleAiEnhance('summarize')}
-              disabled={aiLoading || !text.trim()}
-              title="Summarize text within limits"
+              disabled={!hasBackend || aiLoading || !text.trim()}
+              title={hasBackend ? 'Summarize text within limits' : 'AI enhancement requires a configured backend.'}
             >
               Summarize
             </button>
@@ -301,14 +320,29 @@ export default function Home() {
               className="ai-sub-button"
               type="button"
               onClick={() => handleAiEnhance('grammar')}
-              disabled={aiLoading || !text.trim()}
-              title="Fix grammar and phrasing"
+              disabled={!hasBackend || aiLoading || !text.trim()}
+              title={hasBackend ? 'Fix grammar and phrasing' : 'AI enhancement requires a configured backend.'}
             >
               Fix Grammar
             </button>
+            <button
+              className="ai-sub-button"
+              type="button"
+              onClick={() => handleAiEnhance('rewrite')}
+              disabled={!hasBackend || aiLoading || !text.trim()}
+              title={hasBackend ? 'Rewrite text for clarity and spoken cadence' : 'AI enhancement requires a configured backend.'}
+            >
+              Rewrite
+            </button>
           </div>
           <label className="browser-mode-toggle">
-            <input type="checkbox" checked={browserMode} onChange={(event) => setBrowserMode(event.target.checked)} />
+            <input
+              type="checkbox"
+              checked={browserMode}
+              onChange={(event) => setBrowserMode(event.target.checked)}
+              disabled={!hasBackend}
+              title={!hasBackend ? 'This deployment uses browser speech only.' : undefined}
+            />
             Free browser speech
           </label>
           <button className={`favorite-button${favorite ? ' active' : ''}`} type="button" onClick={toggleFavorite} disabled={!text.trim()}>

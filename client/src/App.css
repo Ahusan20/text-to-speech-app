@@ -572,6 +572,15 @@ audio { display: none; }
   background: #174e39;
 }
 
+.auth-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.auth-btn.sign-in:disabled:hover {
+  background: #1d5a42;
+}
+
 .modal-backdrop {
   position: fixed;
   inset: 0;

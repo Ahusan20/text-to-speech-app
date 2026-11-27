@@ -2,9 +2,15 @@
  * API Service for communicating with the Text-to-Speech backend
  */
 
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/+$/, '');
+
+function apiUrl(path) {
+  return `${API_BASE_URL}${path}`;
+}
+
 export async function getVoices(language) {
   const query = language ? `?language=${encodeURIComponent(language)}` : '';
-  const response = await fetch(`/api/voices${query}`);
+  const response = await fetch(apiUrl(`/api/voices${query}`));
   const data = await response.json();
   if (!response.ok || !data.success) {
     throw new Error(data.message || 'Failed to fetch available voices.');
@@ -13,7 +19,7 @@ export async function getVoices(language) {
 }
 
 export async function convertTextToSpeech({ text, language, voice, speed = 1 }) {
-  const response = await fetch('/api/tts', {
+  const response = await fetch(apiUrl('/api/tts'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -24,17 +30,22 @@ export async function convertTextToSpeech({ text, language, voice, speed = 1 }) 
   if (!response.ok || !data.success) {
     throw new Error(data.message || 'Failed to generate speech.');
   }
-  return data;
+  return {
+    ...data,
+    audioUrl: API_BASE_URL && data.audioUrl
+      ? new URL(data.audioUrl, `${API_BASE_URL}/`).toString()
+      : data.audioUrl,
+  };
 }
 
 export async function checkHealth() {
-  const response = await fetch('/api/health');
+  const response = await fetch(apiUrl('/api/health'));
   const data = await response.json();
   return data;
 }
 
 export async function enhanceTextWithAi({ text, mode = 'conversational' }) {
-  const response = await fetch('/api/ai/enhance', {
+  const response = await fetch(apiUrl('/api/ai/enhance'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

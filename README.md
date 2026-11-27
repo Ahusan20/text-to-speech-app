@@ -9,9 +9,11 @@ A full-stack React and Express text-to-speech application.
 - Text validation and API error handling
 - Browser audio playback, seeking, volume, and download
 - Free browser speech mode, local history, and favorites
-- Text file import
+- TXT, DOCX, and PDF import
 - Speech rate, pitch, and volume controls in browser mode
-- ElevenLabs integration or Windows SAPI fallback
+- ElevenLabs, Windows SAPI, and Google TTS provider options
+- Optional Gemini enhancement: summarize, fix grammar, conversational, and rewrite
+- Optional Supabase authentication, history/favorites sync, and durable audio storage
 - Rate limiting and temporary audio-file cleanup
 
 ## Setup
@@ -56,7 +58,23 @@ PORT=5000
 CORS_ORIGIN=http://localhost:5173
 ```
 
-Without API credentials, the server uses Windows Speech SAPI on Windows.
+Without an ElevenLabs key, the server uses Windows Speech SAPI when a compatible
+voice is installed, then falls back to Google TTS. The Google fallback requires an
+internet connection. Gemini and Supabase are optional and require their own
+configuration before those cloud features are available.
+
+### Optional cloud configuration
+
+- Copy `client/.env.example` to `client/.env` for local frontend configuration.
+- Set `VITE_API_BASE_URL` to the backend origin when the frontend and API are hosted
+  separately. Leave it empty for local development (the Vite proxy is used) or the
+  browser-only GitHub Pages demo.
+- Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in the frontend only if
+  enabling Supabase sign-in and cloud sync.
+- Keep `GEMINI_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, and `TTS_API_KEY` on the
+  backend. Never put these secrets in a `VITE_` variable.
+- To enable Supabase Auth/history/favorites, run [`supabase/schema.sql`](./supabase/schema.sql)
+  in the Supabase SQL Editor. See [DEPLOYMENT.md](./DEPLOYMENT.md) for the full setup.
 
 ## API
 
@@ -87,6 +105,30 @@ Response:
   "success": true,
   "audioUrl": "/audio/generated-file.wav",
   "format": "audio/wav"
+}
+```
+
+### `POST /api/ai/enhance` (optional Gemini)
+
+Request:
+
+```json
+{
+  "text": "Text to improve",
+  "mode": "rewrite"
+}
+```
+
+Supported modes are `summarize`, `grammar`, `conversational`, and `rewrite`.
+The server returns HTTP 503 when `GEMINI_API_KEY` is not configured.
+
+Response:
+
+```json
+{
+  "success": true,
+  "enhancedText": "Polished speech-ready text",
+  "mode": "rewrite"
 }
 ```
 

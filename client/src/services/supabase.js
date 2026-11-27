@@ -16,7 +16,8 @@ export const supabase = isSupabaseConfigured
 export async function getCurrentUser() {
   if (!supabase) return null;
   const { data: { session }, error } = await supabase.auth.getSession();
-  if (error || !session) return null;
+  if (error) throw error;
+  if (!session) return null;
   return session.user;
 }
 
@@ -54,8 +55,7 @@ export async function fetchCloudHistory(userId) {
     .limit(20);
 
   if (error) {
-    console.warn('Failed to load history from Supabase:', error.message);
-    return [];
+    throw error;
   }
   return data.map((item) => ({
     id: item.id,
@@ -82,8 +82,7 @@ export async function saveCloudHistory(userId, { text, language, voice, audioUrl
     .single();
 
   if (error) {
-    console.warn('Failed to save speech record to Supabase:', error.message);
-    return null;
+    throw error;
   }
   return data;
 }
@@ -97,24 +96,25 @@ export async function fetchCloudFavorites(userId) {
     .order('created_at', { ascending: false });
 
   if (error) {
-    console.warn('Failed to load favorites from Supabase:', error.message);
-    return [];
+    throw error;
   }
   return data.map((item) => item.text);
 }
 
 export async function addCloudFavorite(userId, text, voice) {
   if (!supabase || !userId) return;
-  await supabase
+  const { error } = await supabase
     .from('favorites')
     .insert([{ user_id: userId, text, voice }]);
+  if (error) throw error;
 }
 
 export async function removeCloudFavorite(userId, text) {
   if (!supabase || !userId) return;
-  await supabase
+  const { error } = await supabase
     .from('favorites')
     .delete()
     .eq('user_id', userId)
     .eq('text', text);
+  if (error) throw error;
 }
