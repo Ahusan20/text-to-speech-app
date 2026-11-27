@@ -45,12 +45,12 @@ files. Configure Supabase Storage for durable public audio URLs if desired.
 Optionally add `TTS_API_KEY` and `ELEVENLABS_VOICE_ID` if using ElevenLabs; this
 provider may incur charges under its own pricing. Add `GEMINI_API_KEY` only after
 confirming its current terms and billing; AI enhancement controls stay disabled
-until this key is configured. Add `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, and
-`SUPABASE_STORAGE_BUCKET` for durable audio storage. The backend still accepts
-legacy `SUPABASE_SERVICE_ROLE_KEY` values. Keep all backend credentials exclusively
-in Vercel's backend environment settings. Windows Speech SAPI is only available for
-local Windows development. The deployed backend uses Google TTS unless ElevenLabs is
-configured.
+until this key is configured. Add `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and
+`SUPABASE_STORAGE_BUCKET` for durable audio uploads. The legacy service-role JWT is
+preferred for Storage uploads; `SUPABASE_SECRET_KEY` remains supported as a
+fallback. Keep all backend credentials exclusively in Vercel's backend environment
+settings. Windows Speech SAPI is only available for local Windows development. The
+deployed backend uses Google TTS unless ElevenLabs is configured.
 
 ## Backend Environment Variables
 
@@ -68,6 +68,6 @@ Only add optional provider credentials after confirming their pricing and terms.
    the history and favorites tables, their per-user RLS policies, and the public
    speech-audio bucket used for generated audio URLs.
 3. Add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` to the frontend deployment.
-4. For durable audio uploads, add `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, and
-   `SUPABASE_STORAGE_BUCKET=speech-audio` to the backend deployment. Do not expose
-   the secret key to the browser. The legacy `SUPABASE_SERVICE_ROLE_KEY` is also supported.
+4. For durable audio uploads, add `SUPABASE_URL`,
+   `SUPABASE_SERVICE_ROLE_KEY`, and `SUPABASE_STORAGE_BUCKET=speech-audio` to the
+   backend deployment. Do not expose the service-role key to the browser.

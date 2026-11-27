@@ -73,6 +73,49 @@ test('uploads to Supabase Storage with a secret API key in the apikey header', a
   }
 });
 
+test('logs Supabase upload error details before falling back to inline audio', async () => {
+  const previous = {
+    VERCEL: process.env.VERCEL,
+    SUPABASE_URL: process.env.SUPABASE_URL,
+    SUPABASE_SECRET_KEY: process.env.SUPABASE_SECRET_KEY,
+    SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
+    SUPABASE_KEY: process.env.SUPABASE_KEY,
+  };
+  const originalFetch = globalThis.fetch;
+  const originalWarn = console.warn;
+  let warning;
+  process.env.VERCEL = '1';
+  process.env.SUPABASE_URL = 'https://project.supabase.co';
+  process.env.SUPABASE_SECRET_KEY = 'sb_secret_test';
+  delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+  delete process.env.SUPABASE_KEY;
+  globalThis.fetch = async () => ({
+    ok: false,
+    status: 400,
+    text: async () => '{"message":"Bucket not found"}',
+  });
+  console.warn = (message) => {
+    warning = message;
+  };
+
+  try {
+    const result = await storeAudioBuffer(Buffer.from('speech audio'), 'audio/mpeg');
+
+    assert.equal(result.storage, 'inline');
+    assert.match(warning, /status 400: \{"message":"Bucket not found"\}/);
+  } finally {
+    globalThis.fetch = originalFetch;
+    console.warn = originalWarn;
+    for (const [key, value] of Object.entries(previous)) {
+      if (value === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = value;
+      }
+    }
+  }
+});
+
 test('keeps using bearer authentication with legacy Supabase service-role keys', async () => {
   const previous = {
     VERCEL: process.env.VERCEL,
@@ -85,7 +128,7 @@ test('keeps using bearer authentication with legacy Supabase service-role keys',
   let request;
   process.env.VERCEL = '1';
   process.env.SUPABASE_URL = 'https://project.supabase.co';
-  delete process.env.SUPABASE_SECRET_KEY;
+  process.env.SUPABASE_SECRET_KEY = 'sb_secret_fallback';
   process.env.SUPABASE_SERVICE_ROLE_KEY = 'legacy-service-role-key';
   delete process.env.SUPABASE_KEY;
   globalThis.fetch = async (url, options) => {

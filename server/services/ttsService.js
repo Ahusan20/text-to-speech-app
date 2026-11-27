@@ -13,8 +13,8 @@ if (!process.env.VERCEL) {
 }
 
 function getSupabaseStorageKey() {
-  return process.env.SUPABASE_SECRET_KEY
-    || process.env.SUPABASE_SERVICE_ROLE_KEY
+  return process.env.SUPABASE_SERVICE_ROLE_KEY
+    || process.env.SUPABASE_SECRET_KEY
     || process.env.SUPABASE_KEY;
 }
 
@@ -56,7 +56,10 @@ export async function storeAudioBuffer(buffer, mimeType, extension = 'mp3') {
         const publicUrl = `${supabaseUrl}/storage/v1/object/public/${bucket}/${filename}`;
         return { audioUrl: publicUrl, format: mimeType, storage: 'supabase' };
       }
-      console.warn(`Supabase storage upload failed with status ${res.status}; using the configured audio fallback.`);
+      const errorDetails = (await res.text()).replace(/\s+/g, ' ').slice(0, 200);
+      console.warn(
+        `Supabase storage upload failed with status ${res.status}${errorDetails ? `: ${errorDetails}` : ''}; using the configured audio fallback.`
+      );
     } catch (err) {
       console.warn('Supabase storage upload failed; using the configured audio fallback:', err.message);
     }
