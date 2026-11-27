@@ -7,7 +7,13 @@ import GenerateButton from '../components/GenerateButton.jsx';
 import AudioPlayer from '../components/AudioPlayer.jsx';
 import ErrorMessage from '../components/ErrorMessage.jsx';
 import AuthModal from '../components/AuthModal.jsx';
-import { getVoices, convertTextToSpeech, getBrowserVoices, enhanceTextWithAi } from '../services/api.js';
+import {
+  getVoices,
+  convertTextToSpeech,
+  getBrowserVoices,
+  enhanceTextWithAi,
+  checkHealth,
+} from '../services/api.js';
 import { extractTextFromFile } from '../utils/documentParser.js';
 import {
   getCurrentUser,
@@ -36,6 +42,7 @@ export default function Home() {
   const [audioFormat, setAudioFormat] = useState('');
   const [loading, setLoading] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
+  const [aiAvailable, setAiAvailable] = useState(false);
   const [error, setError] = useState('');
   const [browserMode, setBrowserMode] = useState(() => (
     isGitHubPages || (!isLocalHost && !hasConfiguredApi)
@@ -85,6 +92,14 @@ export default function Home() {
     };
 
     if (hasBackend) {
+      checkHealth()
+        .then((health) => {
+          if (active) setAiAvailable(Boolean(health.aiEnhancementAvailable));
+        })
+        .catch(() => {
+          if (active) setAiAvailable(false);
+        });
+
       getVoices()
         .then((data) => {
           if (!active) return;
@@ -296,13 +311,16 @@ export default function Home() {
             <Upload size={15} /> Upload Doc
             <input type="file" accept=".txt,.pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" onChange={handleFileUpload} />
           </label>
-          <div className="ai-enhance-group">
+          <div
+            className="ai-enhance-group"
+            title={!aiAvailable ? 'AI enhancement is unavailable in this deployment.' : undefined}
+          >
             <button
               className="ai-button"
               type="button"
               onClick={() => handleAiEnhance('conversational')}
-              disabled={!hasBackend || aiLoading || !text.trim()}
-              title={hasBackend ? 'Convert text into warm, conversational speech' : 'AI enhancement requires a configured backend.'}
+              disabled={!aiAvailable || aiLoading || !text.trim()}
+              title={aiAvailable ? 'Convert text into warm, conversational speech' : 'AI enhancement is unavailable in this deployment.'}
             >
               <Sparkles size={14} />
               {aiLoading ? 'Enhancing...' : 'Conversational'}
@@ -311,8 +329,8 @@ export default function Home() {
               className="ai-sub-button"
               type="button"
               onClick={() => handleAiEnhance('summarize')}
-              disabled={!hasBackend || aiLoading || !text.trim()}
-              title={hasBackend ? 'Summarize text within limits' : 'AI enhancement requires a configured backend.'}
+              disabled={!aiAvailable || aiLoading || !text.trim()}
+              title={aiAvailable ? 'Summarize text within limits' : 'AI enhancement is unavailable in this deployment.'}
             >
               Summarize
             </button>
@@ -320,8 +338,8 @@ export default function Home() {
               className="ai-sub-button"
               type="button"
               onClick={() => handleAiEnhance('grammar')}
-              disabled={!hasBackend || aiLoading || !text.trim()}
-              title={hasBackend ? 'Fix grammar and phrasing' : 'AI enhancement requires a configured backend.'}
+              disabled={!aiAvailable || aiLoading || !text.trim()}
+              title={aiAvailable ? 'Fix grammar and phrasing' : 'AI enhancement is unavailable in this deployment.'}
             >
               Fix Grammar
             </button>
@@ -329,8 +347,8 @@ export default function Home() {
               className="ai-sub-button"
               type="button"
               onClick={() => handleAiEnhance('rewrite')}
-              disabled={!hasBackend || aiLoading || !text.trim()}
-              title={hasBackend ? 'Rewrite text for clarity and spoken cadence' : 'AI enhancement requires a configured backend.'}
+              disabled={!aiAvailable || aiLoading || !text.trim()}
+              title={aiAvailable ? 'Rewrite text for clarity and spoken cadence' : 'AI enhancement is unavailable in this deployment.'}
             >
               Rewrite
             </button>

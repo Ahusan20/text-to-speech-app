@@ -1,5 +1,5 @@
 import { voices, supportedLanguages } from '../utils/constants.js';
-import { generateSpeech } from '../services/ttsService.js';
+import { generateSpeech, isSupabaseStorageConfigured } from '../services/ttsService.js';
 
 export function getHealth(_req, res) {
   let provider = 'google-tts-cloud';
@@ -13,7 +13,8 @@ export function getHealth(_req, res) {
     status: 'healthy',
     provider,
     platform: process.platform,
-    durableStorage: Boolean(process.env.SUPABASE_URL && (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY)),
+    aiEnhancementAvailable: Boolean(process.env.GEMINI_API_KEY),
+    durableStorage: isSupabaseStorageConfigured(),
   });
 }
 

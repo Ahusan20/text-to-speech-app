@@ -8,7 +8,19 @@ import * as googleTTS from 'google-tts-api';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const audioDirectory = path.join(__dirname, '..', 'audio');
 
-await mkdir(audioDirectory, { recursive: true });
+if (!process.env.VERCEL) {
+  await mkdir(audioDirectory, { recursive: true });
+}
+
+function getSupabaseStorageKey() {
+  return process.env.SUPABASE_SECRET_KEY
+    || process.env.SUPABASE_SERVICE_ROLE_KEY
+    || process.env.SUPABASE_KEY;
+}
+
+export function isSupabaseStorageConfigured() {
+  return Boolean(process.env.SUPABASE_URL && getSupabaseStorageKey());
+}
 
 /**
  * Stores audio buffer to Supabase Storage if configured, or falls back to local storage
@@ -17,20 +29,26 @@ export async function storeAudioBuffer(buffer, mimeType, extension = 'mp3') {
   const filename = `${randomUUID()}.${extension}`;
 
   // 1. Durable Cloud Storage: Supabase Storage if configured
-  if (process.env.SUPABASE_URL && (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY)) {
+  const supabaseKey = getSupabaseStorageKey();
+  if (isSupabaseStorageConfigured()) {
     try {
       const supabaseUrl = process.env.SUPABASE_URL.replace(/\/+$/, '');
-      const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY;
       const bucket = process.env.SUPABASE_STORAGE_BUCKET || 'speech-audio';
       const uploadUrl = `${supabaseUrl}/storage/v1/object/${bucket}/${filename}`;
+      const headers = {
+        'Content-Type': mimeType,
+        'x-upsert': 'true',
+      };
+
+      if (supabaseKey.startsWith('sb_secret_')) {
+        headers.apikey = supabaseKey;
+      } else {
+        headers.Authorization = `Bearer ${supabaseKey}`;
+      }
 
       const res = await fetch(uploadUrl, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${key}`,
-          'Content-Type': mimeType,
-          'x-upsert': 'true',
-        },
+        headers,
         body: buffer,
       });
 
@@ -38,9 +56,18 @@ export async function storeAudioBuffer(buffer, mimeType, extension = 'mp3') {
         const publicUrl = `${supabaseUrl}/storage/v1/object/public/${bucket}/${filename}`;
         return { audioUrl: publicUrl, format: mimeType, storage: 'supabase' };
       }
+      console.warn(`Supabase storage upload failed with status ${res.status}; using the configured audio fallback.`);
     } catch (err) {
-      console.warn('Supabase storage upload failed, falling back to local file storage:', err.message);
+      console.warn('Supabase storage upload failed; using the configured audio fallback:', err.message);
     }
+  }
+
+  if (process.env.VERCEL) {
+    return {
+      audioUrl: `data:${mimeType};base64,${buffer.toString('base64')}`,
+      format: mimeType,
+      storage: 'inline',
+    };
   }
 
   // 2. Local File Storage Fallback (for local development)

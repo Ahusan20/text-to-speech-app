@@ -40,8 +40,11 @@ test('Windows SAPI selection matches the requested culture and gender', () => {
 
 test('GET /api/health returns healthy status', async () => {
   const response = await fetch(`${baseUrl}/api/health`);
+  const body = await response.json();
   assert.equal(response.status, 200);
-  assert.equal((await response.json()).success, true);
+  assert.equal(body.success, true);
+  assert.equal(typeof body.aiEnhancementAvailable, 'boolean');
+  assert.equal(typeof body.durableStorage, 'boolean');
 });
 
 test('GET /api/voices filters voices by language', async () => {

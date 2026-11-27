@@ -16,14 +16,16 @@ app.use(cors({
   methods: ['GET', 'POST'],
 }));
 
+app.set('trust proxy', 1);
 app.use(express.json({ limit: '100kb' }));
 
-// Static route for serving audio
-app.use('/audio', express.static(audioDirectory, {
-  setHeaders(res) {
-    res.setHeader('Cache-Control', 'no-store');
-  },
-}));
+if (!process.env.VERCEL) {
+  app.use('/audio', express.static(audioDirectory, {
+    setHeaders(res) {
+      res.setHeader('Cache-Control', 'no-store');
+    },
+  }));
+}
 
 // Apply rate limiting to all /api routes
 app.use('/api', apiLimiter);
@@ -52,11 +54,14 @@ app.use((error, _req, res, _next) => {
   });
 });
 
-// Periodic audio cleanup: removes audio files older than 30 mins every 10 mins
-setInterval(() => {
-  cleanupExpiredAudio(30);
-}, 10 * 60 * 1000).unref();
+if (!process.env.VERCEL) {
+  setInterval(() => {
+    cleanupExpiredAudio(30);
+  }, 10 * 60 * 1000).unref();
 
-app.listen(PORT, () => {
-  console.log(`Text-to-Speech API listening on http://localhost:${PORT}`);
-});
+  app.listen(PORT, () => {
+    console.log(`Text-to-Speech API listening on http://localhost:${PORT}`);
+  });
+}
+
+export default app;

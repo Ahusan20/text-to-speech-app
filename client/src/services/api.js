@@ -41,6 +41,9 @@ export async function convertTextToSpeech({ text, language, voice, speed = 1 }) 
 export async function checkHealth() {
   const response = await fetch(apiUrl('/api/health'));
   const data = await response.json();
+  if (!response.ok || !data.success) {
+    throw new Error(data.message || 'Failed to check backend health.');
+  }
   return data;
 }
 
