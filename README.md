@@ -177,8 +177,8 @@ The submission package is documented in [docs/FINAL_DELIVERABLES.md](./docs/FINA
 
 - GitHub Pages demo: https://ahusan20.github.io/text-to-speech-app/
 - Vercel frontend: https://text-to-speech-app-pi.vercel.app/
-- Vercel backend API: https://vox-studio-api.vercel.app/
-- Health check: https://vox-studio-api.vercel.app/api/health
+- Backend API: Deploy separately using Render or Vercel and set `VITE_API_BASE_URL`
+  to that backend origin.
 
 The GitHub Pages deployment uses browser Web Speech and local speech history, with
 Supabase sign-in and cloud favorites enabled by its Actions variables. The Vercel
