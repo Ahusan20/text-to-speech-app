@@ -40,7 +40,7 @@ The API runs at `http://localhost:5000`.
 
 ## Free public demo
 
-Source: [GitHub repository](https://github.com/Ahusan20/text-to-speech-app).  
+Source: [GitHub repository](https://github.com/Ahusan20/text-to-speech-app).
 Live frontend: [GitHub Pages](https://ahusan20.github.io/text-to-speech-app/).
 It uses the browser's built-in speech synthesis and stores recent texts and favorites
 locally on the current device. In this free mode, speech playback is available but
@@ -136,6 +136,66 @@ Response:
 
 Import `postman_collection.json` to test health, voice discovery, speech generation, and validation errors.
 
+### API Summary
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| `GET` | `/api/health` | Returns server status and the active TTS provider |
+| `GET` | `/api/voices` | Returns available voices, optionally filtered by language |
+| `POST` | `/api/tts` | Validates text and voice configuration, then returns generated audio |
+| `POST` | `/api/ai/enhance` | Optionally summarizes, fixes grammar, rewrites, or conversationalizes text |
+
+The TTS endpoint requires JSON and accepts `text`, `language`, and `voice`.
+The AI endpoint requires JSON and accepts `text` and one of `summarize`, `grammar`,
+`conversational`, or `rewrite`. HTTP 503 is returned when Gemini is not configured.
+
+## Final Project Deliverables
+
+The submission package is documented in [docs/FINAL_DELIVERABLES.md](./docs/FINAL_DELIVERABLES.md).
+
+| Deliverable | Location |
+|---|---|
+| Source code | [Repository](https://github.com/Ahusan20/text-to-speech-app) |
+| Database schema | [supabase/schema.sql](./supabase/schema.sql) |
+| API documentation | This README and [Postman collection](./postman_collection.json) |
+| UI screenshots | [docs/ui-desktop.png](./docs/ui-desktop.png), [docs/ui-mobile.png](./docs/ui-mobile.png), [docs/ui-generated.png](./docs/ui-generated.png) |
+| Deployment documentation | [DEPLOYMENT.md](./DEPLOYMENT.md) |
+| Project presentation | [docs/project-presentation.pptx](./docs/project-presentation.pptx) |
+
+### Deployment URLs
+
+- GitHub Pages demo: https://ahusan20.github.io/text-to-speech-app/
+- Vercel frontend: https://text-to-speech-app-pi.vercel.app/
+- Vercel API: https://text-to-speech-app-pi.vercel.app/
+
+The GitHub Pages deployment uses browser Web Speech and local browser storage.
+The Vercel deployment connects to the backend API and optional Supabase configuration.
+
+## Specification Coverage
+
+- Core text input, character/word counts, 500-character limit, clear/edit workflow
+- English, Hindi, Gujarati, Marathi, Spanish, French, and German language support
+- Voice discovery and language/voice validation
+- Browser playback, seek, volume, and download when a provider supplies downloadable audio
+- TXT, PDF, and DOCX text extraction
+- ElevenLabs, Windows SAPI, Google TTS, and browser Web Speech fallbacks
+- Optional Gemini text enhancement
+- Optional Supabase authentication, history, favorites, and audio storage
+- Backend validation, rate limiting, CORS, credential protection, and temporary audio cleanup
+
+## Testing
+
+Run the smallest relevant suites from the repository root:
+
+```powershell
+cd client
+npm.cmd test
+npm.cmd run build
+npm.cmd run lint
+
+cd ..\server
+npm.cmd test
+```
 ## Project Structure
 
 ```text

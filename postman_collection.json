@@ -54,6 +54,18 @@
         },
         "url": "{{baseUrl}}/api/tts"
       }
+    },
+    {
+      "name": "AI Enhance",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"text\": \"vox studio converts text into speech.\",\n  \"mode\": \"grammar\"\n}"
+        },
+        "url": "{{baseUrl}}/api/ai/enhance"
+      }
     }
   ]
 }

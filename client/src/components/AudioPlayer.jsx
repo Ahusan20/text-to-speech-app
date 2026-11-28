@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Check, Pause, Play, Volume2, VolumeX } from 'lucide-react';
+import { Check, Pause, Play, Volume2, VolumeX, Gauge } from 'lucide-react';
 import DownloadButton from './DownloadButton.jsx';
 import { getAudioFilename } from '../utils/audioFormat.js';
 
@@ -10,7 +10,14 @@ function formatTime(seconds) {
   return `${minutes}:${remaining.toString().padStart(2, '0')}`;
 }
 
-export default function AudioPlayer({ audioUrl, audioFormat, speechMode = false, text = '', voice }) {
+export default function AudioPlayer({
+  audioUrl,
+  audioFormat,
+  speechMode = false,
+  text = '',
+  voice,
+  onGenerateDownload,
+}) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
@@ -26,6 +33,12 @@ export default function AudioPlayer({ audioUrl, audioFormat, speechMode = false,
       audioRef.current.volume = volume;
     }
   }, [volume]);
+
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.playbackRate = rate;
+    }
+  }, [rate]);
 
   useEffect(() => () => {
     if (speechMode) window.speechSynthesis?.cancel();
@@ -83,13 +96,20 @@ export default function AudioPlayer({ audioUrl, audioFormat, speechMode = false,
 
   if (!audioUrl) return null;
 
+  const formatBadge = speechMode
+    ? 'Browser'
+    : (audioFormat?.includes('wav') ? 'WAV' : 'MP3');
+
   return (
     <div className="audio-card">
       <div className="audio-success">
         <span className="success-icon">
           <Check size={13} strokeWidth={3} />
         </span>
-        <span>{speechMode ? 'Browser speech ready' : 'Generated audio'}</span>
+        <div className="audio-status-meta">
+          <span>{speechMode ? 'Browser speech ready' : 'Generated audio ready'}</span>
+          <span className="format-badge">{formatBadge}</span>
+        </div>
       </div>
 
       <div className="player">
@@ -104,17 +124,20 @@ export default function AudioPlayer({ audioUrl, audioFormat, speechMode = false,
 
         {speechMode ? (
           <div className="speech-controls">
-            <label>Speed
+            <label>
+              <Gauge size={13} /> Speed
               <select value={rate} onChange={(event) => setRate(Number(event.target.value))} aria-label="Speech speed">
                 {[0.75, 1, 1.25, 1.5, 2].map((value) => <option key={value} value={value}>{value}x</option>)}
               </select>
             </label>
-            <label>Pitch
+            <label>
+              Pitch
               <select value={pitch} onChange={(event) => setPitch(Number(event.target.value))} aria-label="Speech pitch">
                 {[0.75, 1, 1.25, 1.5].map((value) => <option key={value} value={value}>{value}x</option>)}
               </select>
             </label>
-            <label className="speech-volume">Volume
+            <label className="speech-volume">
+              Volume
               <input
                 type="range"
                 min="0"
@@ -126,7 +149,15 @@ export default function AudioPlayer({ audioUrl, audioFormat, speechMode = false,
                 style={{ '--progress': `${volume * 100}%` }}
               />
             </label>
-            <span className="browser-playback-note">Playback uses a voice installed in your browser. Audio download is unavailable in browser speech mode.</span>
+            {onGenerateDownload && (
+              <DownloadButton
+                audioUrl={audioUrl}
+                filename="speech.mp3"
+                onGenerateDownload={onGenerateDownload}
+                label="Download Audio"
+                className="browser-download-action"
+              />
+            )}
           </div>
         ) : (
           <>
@@ -143,45 +174,59 @@ export default function AudioPlayer({ audioUrl, audioFormat, speechMode = false,
               style={{ '--progress': `${duration ? (currentTime / duration) * 100 : 0}%` }}
             />
             <span className="time">{formatTime(duration)}</span>
+
+            <label className="speed-control-compact" title="Playback speed">
+              <select value={rate} onChange={(e) => setRate(Number(e.target.value))} aria-label="Audio playback speed">
+                {[0.75, 1, 1.25, 1.5, 2].map((val) => (
+                  <option key={val} value={val}>{val}x</option>
+                ))}
+              </select>
+            </label>
+
+            <button
+              className="mute-button"
+              type="button"
+              onClick={toggleMute}
+              aria-label="Toggle mute"
+            >
+              {volume === 0 ? <VolumeX size={17} /> : <Volume2 size={17} />}
+            </button>
+
+            <input
+              className="volume"
+              type="range"
+              min="0"
+              max="1"
+              step="0.05"
+              value={volume}
+              onChange={(event) => setVolume(Number(event.target.value))}
+              aria-label="Volume"
+              style={{ '--progress': `${volume * 100}%` }}
+            />
+
+            <DownloadButton
+              audioUrl={audioUrl}
+              filename={getAudioFilename(audioFormat)}
+              onGenerateDownload={onGenerateDownload}
+            />
           </>
         )}
-
-        {!speechMode && <button
-          className="mute-button"
-          type="button"
-          onClick={toggleMute}
-          aria-label="Toggle mute"
-        >
-          {volume === 0 ? <VolumeX size={17} /> : <Volume2 size={17} />}
-        </button>}
-
-        {!speechMode && <input
-          className="volume"
-          type="range"
-          min="0"
-          max="1"
-          step="0.05"
-          value={volume}
-          onChange={(event) => setVolume(Number(event.target.value))}
-          aria-label="Volume"
-          style={{ '--progress': `${volume * 100}%` }}
-        />}
-
-        {!speechMode && <DownloadButton audioUrl={audioUrl} filename={getAudioFilename(audioFormat)} />}
       </div>
 
-      {!speechMode && <audio
-        ref={audioRef}
-        src={audioUrl}
-        onLoadedMetadata={(event) => {
-          setDuration(event.currentTarget.duration);
-          setCurrentTime(0);
-        }}
-        onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)}
-        onPlay={() => setIsPlaying(true)}
-        onPause={() => setIsPlaying(false)}
-        onEnded={() => setIsPlaying(false)}
-      />}
+      {!speechMode && (
+        <audio
+          ref={audioRef}
+          src={audioUrl}
+          onLoadedMetadata={(event) => {
+            setDuration(event.currentTarget.duration);
+            setCurrentTime(0);
+          }}
+          onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)}
+          onPlay={() => setIsPlaying(true)}
+          onPause={() => setIsPlaying(false)}
+          onEnded={() => setIsPlaying(false)}
+        />
+      )}
     </div>
   );
 }

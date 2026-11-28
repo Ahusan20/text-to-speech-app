@@ -244,6 +244,21 @@ export default function Home() {
     }
   }
 
+  async function handleGenerateDownload() {
+    if (audioUrl && audioUrl !== 'browser-speech') {
+      return audioUrl;
+    }
+    try {
+      const data = await convertTextToSpeech({ text, language, voice });
+      setAudioUrl(data.audioUrl);
+      setAudioFormat(data.format);
+      return data.audioUrl;
+    } catch (err) {
+      setError(`Audio download generation failed: ${err.message}`);
+      throw err;
+    }
+  }
+
   return (
     <main className="app-shell">
       <header className="topbar">
@@ -306,6 +321,31 @@ export default function Home() {
           }}
           maxLength={MAX_CHARACTERS}
         />
+
+        <div className="sample-prompts-bar">
+          <span className="sample-title">Try:</span>
+          <button
+            type="button"
+            className="sample-pill"
+            onClick={() => setText('Welcome to Vox Studio! Experience natural, lifelike speech synthesis with multiple languages and accents.')}
+          >
+            Welcome greeting
+          </button>
+          <button
+            type="button"
+            className="sample-pill"
+            onClick={() => setText('Your verification code is 4 8 2 9. This code will expire in ten minutes. Please do not share it.')}
+          >
+            Security OTP
+          </button>
+          <button
+            type="button"
+            className="sample-pill"
+            onClick={() => setText('Thank you for contacting customer support. A representative will be with you shortly to assist you.')}
+          >
+            Customer support
+          </button>
+        </div>
         <div className="utility-row">
           <label className="upload-button" title="Upload TXT, PDF, or DOCX">
             <Upload size={15} /> Upload Doc
@@ -390,12 +430,13 @@ export default function Home() {
         </div>
 
         <AudioPlayer
-          key={audioUrl}
+          key={`${audioUrl}-${audioFormat}`}
           audioUrl={audioUrl}
           audioFormat={audioFormat}
           speechMode={audioUrl === 'browser-speech'}
           text={text}
           voice={languageVoices.find((item) => item.id === voice)}
+          onGenerateDownload={handleGenerateDownload}
         />
         {history.length > 0 && (
           <section className="history-card" aria-label="Recent speech history">
