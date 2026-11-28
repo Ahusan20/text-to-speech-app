@@ -47,8 +47,9 @@ when avoiding payment details is a requirement.
 
 ## Backend - Vercel Hobby
 
-Create a separate Vercel project from this repository with `server` as its project
-root. Vercel detects the Express app in `server.js`; deploy it on the Hobby plan,
+The deployed backend is available at https://vox-studio-api.vercel.app/.
+The Vercel project uses `server` as its project root and the routing configuration
+in [`server/vercel.json`](./server/vercel.json). Deploy it on the Hobby plan,
 which is $0/month and has included function usage limits. Exceeding Hobby limits can
 pause deployments until the next billing cycle rather than creating usage charges.
 

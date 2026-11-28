@@ -24,8 +24,7 @@ This checklist maps the project submission to the requirements in
 
 - GitHub Pages: https://ahusan20.github.io/text-to-speech-app/
 - Vercel frontend: https://text-to-speech-app-pi.vercel.app/
-- Backend API: Deploy separately through Render or Vercel; the frontend URL above
-  does not expose `/api/health`.
+- Vercel backend API: https://vox-studio-api.vercel.app/
 
 ## UI Evidence
 
