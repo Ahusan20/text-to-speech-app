@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Database, History, LogIn, LogOut, Sparkles, Upload, User, Waves } from 'lucide-react';
+import { History, LogIn, LogOut, Sparkles, Upload, User, Waves } from 'lucide-react';
 import TextInput from '../components/TextInput.jsx';
 import LanguageSelector from '../components/LanguageSelector.jsx';
 import VoiceSelector from '../components/VoiceSelector.jsx';
@@ -294,13 +294,13 @@ export default function Home() {
             </div>
           ) : (
             <button
-              className="auth-btn"
+              className="auth-btn sign-in"
               type="button"
               onClick={() => setIsAuthOpen(true)}
-              title={isSupabaseConfigured ? 'Sign in to sync your speech history' : 'Storage settings: Local Storage Active'}
+              disabled={!isSupabaseConfigured}
+              title={!isSupabaseConfigured ? 'Cloud sync is not configured for this deployment.' : undefined}
             >
-              {isSupabaseConfigured ? <LogIn size={13} /> : <Database size={13} />}
-              <span>{isSupabaseConfigured ? 'Sign in' : 'Local Storage'}</span>
+              <LogIn size={13} /> {isSupabaseConfigured ? 'Sign in' : 'Cloud sync unavailable'}
             </button>
           )}
         </div>
