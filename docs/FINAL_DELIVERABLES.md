@@ -1,7 +1,7 @@
 # Vox Studio - Final Project Deliverables
 
 This checklist maps the project submission to the requirements in
-`Web - Text-to-Speech Application.pdf`.
+[the project specification](./Web%20-%20Text-to-Speech%20Application.pdf).
 
 ## Submission Checklist
 
@@ -16,14 +16,16 @@ This checklist maps the project submission to the requirements in
 - [X] Deployment guide is provided in `DEPLOYMENT.md`.
 - [X] Project presentation is provided in `docs/project-presentation.pptx`.
 - [X] Frontend and backend deployments are configured.
-- [ ] A short recorded project demonstration should be captured before final submission
-  if a 30-60 second demo video is required.
+- [X] Ten-generation-per-day usage limits and protected analytics reporting are implemented.
+- [X] Short project demonstration is provided in
+  `docs/project-demonstration.mp4`.
 
 ## Live Deployments
 
 - GitHub Pages: https://ahusan20.github.io/text-to-speech-app/
 - Vercel frontend: https://text-to-speech-app-pi.vercel.app/
-- Vercel API: https://text-to-speech-app-pi.vercel.app/
+- Vercel backend API: https://vox-studio-api.vercel.app/
+- API health: https://vox-studio-api.vercel.app/api/health
 
 ## UI Evidence
 
@@ -36,6 +38,7 @@ This checklist maps the project submission to the requirements in
 
 - PowerPoint: `docs/project-presentation.pptx`
 - Presentation generator: `scripts/create-presentation.js`
+- Project demonstration: `docs/project-demonstration.mp4`
 
 ## API and Testing Evidence
 
@@ -63,5 +66,4 @@ This checklist maps the project submission to the requirements in
 2. Run backend tests.
 3. Verify the GitHub Pages and Vercel URLs.
 4. Import `postman_collection.json` and set `baseUrl` to the deployed API.
-5. Record a short walkthrough showing text entry, language and voice selection,
-   speech generation, playback/download, and the mobile or browser-speech view.
+5. Submit the presentation and project demonstration from `docs/`.

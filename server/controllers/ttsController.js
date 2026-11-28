@@ -1,5 +1,6 @@
 import { voices, supportedLanguages } from '../utils/constants.js';
 import { generateSpeech, isSupabaseStorageConfigured } from '../services/ttsService.js';
+import { recordAnalyticsEvent } from '../services/analyticsService.js';
 
 export function getHealth(_req, res) {
   let provider = 'google-tts-cloud';
@@ -44,6 +45,12 @@ export async function createTts(req, res) {
 
   try {
     const result = await generateSpeech(text, selectedVoice, speed);
+    recordAnalyticsEvent({
+      success: true,
+      language: selectedVoice.language,
+      provider: process.env.TTS_API_KEY ? 'elevenlabs' : (process.platform === 'win32' ? 'windows-sapi-or-google' : 'google-tts'),
+      characterCount: text.length,
+    });
 
     return res.status(200).json({
       success: true,
@@ -52,6 +59,12 @@ export async function createTts(req, res) {
     });
   } catch (error) {
     console.error('TTS generation failed:', error.message);
+    recordAnalyticsEvent({
+      success: false,
+      language: selectedVoice.language,
+      provider: process.env.TTS_API_KEY ? 'elevenlabs' : 'fallback',
+      characterCount: text.length,
+    });
 
     if (error.status === 401) {
       return res.status(401).json({

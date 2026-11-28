@@ -118,3 +118,32 @@ export async function removeCloudFavorite(userId, text) {
     .eq('text', text);
   if (error) throw error;
 }
+
+export async function recordUsageEvent(userId, event) {
+  if (!supabase || !userId) return null;
+  const { error } = await supabase
+    .from('usage_events')
+    .insert([{
+      user_id: userId,
+      event_type: event.eventType || 'tts',
+      language: event.language || null,
+      character_count: event.characterCount || 0,
+      success: event.success !== false,
+    }]);
+  if (error) throw error;
+  return true;
+}
+
+export async function fetchMyUsage() {
+  if (!supabase) return null;
+  const { data, error } = await supabase.rpc('get_my_usage');
+  if (error) throw error;
+  return data?.[0] || null;
+}
+
+export async function fetchAdminUsage() {
+  if (!supabase) return null;
+  const { data, error } = await supabase.rpc('get_admin_usage');
+  if (error) throw error;
+  return data;
+}

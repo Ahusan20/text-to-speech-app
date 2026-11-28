@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import test, { before, after } from 'node:test';
 import { buildSapiVoiceSelectionScript } from '../services/ttsService.js';
+import { createDailyTtsLimiter } from '../middleware/rateLimiter.js';
 
 const baseUrl = 'http://127.0.0.1:5124';
 let server;
@@ -45,6 +46,33 @@ test('GET /api/health returns healthy status', async () => {
   assert.equal(body.success, true);
   assert.equal(typeof body.aiEnhancementAvailable, 'boolean');
   assert.equal(typeof body.durableStorage, 'boolean');
+});
+
+test('daily TTS limiter allows 10 generations and rejects the 11th', () => {
+  const limiter = createDailyTtsLimiter(10);
+  const req = { ip: '127.0.0.1' };
+  const headers = {};
+  const res = {
+    setHeader(name, value) {
+      headers[name] = value;
+    },
+    statusCode: 200,
+    status(code) {
+      this.statusCode = code;
+      return this;
+    },
+    json(body) {
+      this.body = body;
+      return this;
+    },
+  };
+
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    assert.equal(limiter(req, res, () => 'next'), 'next');
+  }
+  limiter(req, res, () => 'next');
+  assert.equal(res.statusCode, 429);
+  assert.match(res.body.message, /10 generations per day/i);
 });
 
 test('GET /api/voices filters voices by language', async () => {

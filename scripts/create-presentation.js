@@ -12,12 +12,13 @@ const slides = [
   ['Problem', 'Converts large or difficult written text into accessible spoken audio.', 'Text Input'],
   ['Objectives', 'Learn React, REST APIs, backend validation, third-party TTS integration, and secure credential handling.', 'Learning'],
   ['System Architecture', 'Free public frontend: GitHub Pages + browser speech synthesis | Local backend: Express + Windows SAPI or optional ElevenLabs', 'Flow'],
-  ['Implemented Features', 'Text and word counts | Language and voice selection | Browser speech | Playback rate and pitch | TXT import | Local history and favorites', 'Features'],
-  ['API Endpoints', 'GET /api/health | GET /api/voices | POST /api/tts', 'Backend'],
-  ['Security', 'Environment credentials | CORS | Rate limiting | Input validation | Temporary audio cleanup', 'Security'],
-  ['Testing', '5 API tests pass | Local Windows SAPI generation tested | Frontend lint/build pass | GitHub Pages deployment verified', 'Quality'],
+  ['Implemented Features', 'Text and word counts | Language and voice selection | Browser and server speech | Playback controls | PDF/DOCX/TXT import | History and favorites', 'Features'],
+  ['Advanced Features', 'Supabase authentication | Cloud history | Favorites | AI enhancement | Cloud storage | Daily usage limits | Analytics and admin reporting', 'Level 3'],
+  ['API Endpoints', 'GET /api/health | GET /api/voices | POST /api/tts | POST /api/ai/enhance | GET /api/admin/analytics', 'Backend'],
+  ['Security', 'Environment credentials | CORS | Daily and API rate limiting | Input validation | RLS | Temporary audio cleanup', 'Security'],
+  ['Testing', 'Frontend tests pass | Backend tests pass | Frontend lint/build pass | Postman collection and deployment verified', 'Quality'],
   ['Demo', 'Enter text -> Select an installed browser voice -> Generate -> Play -> Adjust speed or pitch', 'Walkthrough'],
-  ['Conclusion', 'A complete Level 1 project demonstrating full-stack communication and TTS integration.', 'Summary'],
+  ['Conclusion', 'A complete Level 3 project demonstrating full-stack TTS, authentication, cloud storage, AI, usage limits, and analytics.', 'Summary'],
 ];
 
 for (const [title, body, label] of slides) {

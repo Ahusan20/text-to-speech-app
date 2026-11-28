@@ -6,6 +6,7 @@ import VoiceSelector from '../components/VoiceSelector.jsx';
 import GenerateButton from '../components/GenerateButton.jsx';
 import AudioPlayer from '../components/AudioPlayer.jsx';
 import ErrorMessage from '../components/ErrorMessage.jsx';
+import UsageDashboard from '../components/UsageDashboard.jsx';
 import {
   getVoices,
   convertTextToSpeech,
@@ -23,6 +24,9 @@ import {
   addCloudFavorite,
   removeCloudFavorite,
   isSupabaseConfigured,
+  recordUsageEvent,
+  fetchMyUsage,
+  fetchAdminUsage,
 } from '../services/supabase.js';
 
 const AuthModal = lazy(() => import('../components/AuthModal.jsx'));
@@ -64,6 +68,18 @@ export default function Home() {
       return [];
     }
   });
+  const [usage, setUsage] = useState(null);
+  const [adminUsage, setAdminUsage] = useState(null);
+  const [dailyUsage, setDailyUsage] = useState(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem('vox-daily-usage') || '{}');
+      const today = new Date().toISOString().slice(0, 10);
+      return stored.date === today ? Number(stored.count) || 0 : 0;
+    } catch {
+      return 0;
+    }
+  });
+  const DAILY_LIMIT = 10;
   const favorite = favorites.includes(text);
 
   function toggleFavorite() {
@@ -127,6 +143,16 @@ export default function Home() {
           ]);
           if (cloudHistory.length > 0 && active) setHistory(cloudHistory);
           if (cloudFavs.length > 0 && active) setFavorites(cloudFavs);
+          const [myUsage, adminUsageValue] = await Promise.all([
+            fetchMyUsage(),
+            currentUser.app_metadata?.role === 'admin'
+              ? fetchAdminUsage()
+              : Promise.resolve(null),
+          ]);
+          if (active) {
+            setUsage(myUsage);
+            if (adminUsageValue && !adminUsageValue.error) setAdminUsage(adminUsageValue);
+          }
         } catch (e) {
           if (active) setError(`Cloud sync failed: ${e.message}`);
         }
@@ -164,6 +190,11 @@ export default function Home() {
       return;
     }
 
+    if (dailyUsage >= DAILY_LIMIT) {
+      setError(`Daily TTS limit reached. Maximum ${DAILY_LIMIT} generations per day.`);
+      return;
+    }
+
     setLoading(true);
     setAudioUrl('');
     setAudioFormat('');
@@ -187,11 +218,31 @@ export default function Home() {
           }
         }
       }
+      const today = new Date().toISOString().slice(0, 10);
+      const nextDailyUsage = dailyUsage + 1;
+      setDailyUsage(nextDailyUsage);
+      localStorage.setItem('vox-daily-usage', JSON.stringify({ date: today, count: nextDailyUsage }));
+      if (user) {
+        recordUsageEvent(user.id, {
+          eventType: 'tts',
+          language,
+          characterCount: text.length,
+          success: true,
+        }).catch(() => {});
+      }
       const nextHistory = [{ text, language, createdAt: Date.now() }, ...history].slice(0, 10);
       setHistory(nextHistory);
       localStorage.setItem('vox-history', JSON.stringify(nextHistory));
     } catch (requestError) {
       setError(requestError.message || 'Failed to generate speech.');
+      if (user) {
+        recordUsageEvent(user.id, {
+          eventType: 'tts',
+          language,
+          characterCount: text.length,
+          success: false,
+        }).catch(() => {});
+      }
     } finally {
       setLoading(false);
     }
@@ -438,6 +489,13 @@ export default function Home() {
           text={text}
           voice={languageVoices.find((item) => item.id === voice)}
           onGenerateDownload={handleGenerateDownload}
+        />
+        <UsageDashboard
+          usage={usage}
+          dailyUsed={dailyUsage}
+          dailyLimit={DAILY_LIMIT}
+          adminUsage={adminUsage}
+          isAdmin={Boolean(user?.app_metadata?.role === 'admin')}
         />
         {history.length > 0 && (
           <section className="history-card" aria-label="Recent speech history">

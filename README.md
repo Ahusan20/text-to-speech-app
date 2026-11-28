@@ -14,6 +14,7 @@ A full-stack React and Express text-to-speech application.
 - ElevenLabs, Windows SAPI, and Google TTS provider options
 - Optional Gemini enhancement: summarize, fix grammar, conversational, and rewrite
 - Optional Supabase authentication, history/favorites sync, and durable audio storage
+- Daily usage limits and server/client analytics, with protected admin reporting
 - Rate limiting and temporary audio-file cleanup
 
 ## Setup
@@ -43,8 +44,11 @@ The API runs at `http://localhost:5000`.
 Source: [GitHub repository](https://github.com/Ahusan20/text-to-speech-app).
 Live frontend: [GitHub Pages](https://ahusan20.github.io/text-to-speech-app/).
 It uses the browser's built-in speech synthesis and stores recent texts and favorites
-locally on the current device. In this free mode, speech playback is available but
-audio download and seeking are not; use the local Windows SAPI backend for downloadable WAV audio.
+locally on the current device. When Supabase is configured for the Pages deployment,
+users can sign in and sync favorites; browser-mode speech history remains local.
+Speech playback, volume, and on-demand audio download are available. Native seeking
+is only available for server-generated WAV/MP3 audio; use the local Windows SAPI or
+cloud backend for downloadable server audio.
 
 ## Environment
 
@@ -56,6 +60,8 @@ ELEVENLABS_VOICE_ID=your_voice_id
 ELEVENLABS_MODEL_ID=eleven_multilingual_v2
 PORT=5000
 CORS_ORIGIN=http://localhost:5173
+DAILY_TTS_LIMIT=10
+ADMIN_API_KEY=generate-a-long-random-secret
 ```
 
 Without an ElevenLabs key, the server uses Windows Speech SAPI when a compatible
@@ -71,6 +77,9 @@ configuration before those cloud features are available.
   browser-only GitHub Pages demo.
 - Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in the frontend only if
   enabling Supabase sign-in and cloud sync.
+- The GitHub Pages workflow reads these values from the repository's Actions
+  variables with the same names. The public demo uses browser speech; speech history
+  remains local there, while signed-in users can sync favorites.
 - Keep `GEMINI_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, and `TTS_API_KEY` on the
   backend. Never put these secrets in a `VITE_` variable.
 - To enable Supabase Auth/history/favorites, run [`supabase/schema.sql`](./supabase/schema.sql)
@@ -144,6 +153,7 @@ Import `postman_collection.json` to test health, voice discovery, speech generat
 | `GET` | `/api/voices` | Returns available voices, optionally filtered by language |
 | `POST` | `/api/tts` | Validates text and voice configuration, then returns generated audio |
 | `POST` | `/api/ai/enhance` | Optionally summarizes, fixes grammar, rewrites, or conversationalizes text |
+| `GET` | `/api/admin/analytics` | Returns protected server analytics when `X-Admin-Key` matches `ADMIN_API_KEY` |
 
 The TTS endpoint requires JSON and accepts `text`, `language`, and `voice`.
 The AI endpoint requires JSON and accepts `text` and one of `summarize`, `grammar`,
@@ -161,15 +171,18 @@ The submission package is documented in [docs/FINAL_DELIVERABLES.md](./docs/FINA
 | UI screenshots | [docs/ui-desktop.png](./docs/ui-desktop.png), [docs/ui-mobile.png](./docs/ui-mobile.png), [docs/ui-generated.png](./docs/ui-generated.png) |
 | Deployment documentation | [DEPLOYMENT.md](./DEPLOYMENT.md) |
 | Project presentation | [docs/project-presentation.pptx](./docs/project-presentation.pptx) |
+| Project demonstration | [docs/project-demonstration.mp4](./docs/project-demonstration.mp4) |
 
 ### Deployment URLs
 
 - GitHub Pages demo: https://ahusan20.github.io/text-to-speech-app/
 - Vercel frontend: https://text-to-speech-app-pi.vercel.app/
-- Vercel API: https://text-to-speech-app-pi.vercel.app/
+- Vercel backend API: https://vox-studio-api.vercel.app/
+- Health check: https://vox-studio-api.vercel.app/api/health
 
-The GitHub Pages deployment uses browser Web Speech and local browser storage.
-The Vercel deployment connects to the backend API and optional Supabase configuration.
+The GitHub Pages deployment uses browser Web Speech and local speech history, with
+Supabase sign-in and cloud favorites enabled by its Actions variables. The Vercel
+deployment connects to the backend API and optional Supabase configuration.
 
 ## Specification Coverage
 
@@ -181,6 +194,8 @@ The Vercel deployment connects to the backend API and optional Supabase configur
 - ElevenLabs, Windows SAPI, Google TTS, and browser Web Speech fallbacks
 - Optional Gemini text enhancement
 - Optional Supabase authentication, history, favorites, and audio storage
+- 10-generation-per-day usage limit, configurable with `DAILY_TTS_LIMIT`
+- Protected server analytics and Supabase account/admin usage reporting
 - Backend validation, rate limiting, CORS, credential protection, and temporary audio cleanup
 
 ## Testing
