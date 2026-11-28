@@ -856,6 +856,70 @@ audio { display: none; }
   cursor: wait;
 }
 
+.local-storage-info {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.local-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  background: #edf5ee;
+  color: #1d5a42;
+  border: 1px solid #c9ded0;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.local-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #2b825f;
+}
+
+.info-box {
+  background: #fbfcf9;
+  border: 1px solid #e1e7dc;
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 12px;
+  color: #4b584d;
+  line-height: 1.5;
+}
+
+.info-box-header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #213025;
+  margin-bottom: 6px;
+  font-size: 12px;
+}
+
+.info-box code {
+  background: #f0f3ed;
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-family: monospace;
+}
+
+.schema-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  color: #1d5a42;
+  font-weight: 600;
+  font-size: 11px;
+}
+
 .modal-footer {
   margin-top: 14px;
   text-align: center;
