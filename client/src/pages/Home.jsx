@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { History, LogIn, LogOut, Sparkles, Upload, User, Waves } from 'lucide-react';
 import TextInput from '../components/TextInput.jsx';
 import LanguageSelector from '../components/LanguageSelector.jsx';
@@ -6,7 +6,6 @@ import VoiceSelector from '../components/VoiceSelector.jsx';
 import GenerateButton from '../components/GenerateButton.jsx';
 import AudioPlayer from '../components/AudioPlayer.jsx';
 import ErrorMessage from '../components/ErrorMessage.jsx';
-import AuthModal from '../components/AuthModal.jsx';
 import {
   getVoices,
   convertTextToSpeech,
@@ -25,6 +24,8 @@ import {
   removeCloudFavorite,
   isSupabaseConfigured,
 } from '../services/supabase.js';
+
+const AuthModal = lazy(() => import('../components/AuthModal.jsx'));
 
 const MAX_CHARACTERS = 500;
 const hostname = window.location.hostname;
@@ -466,11 +467,15 @@ export default function Home() {
         )}
       </section>
 
-      <AuthModal
-        isOpen={isAuthOpen}
-        onClose={() => setIsAuthOpen(false)}
-        onAuthSuccess={(authenticatedUser) => setUser(authenticatedUser)}
-      />
+      {isAuthOpen && (
+        <Suspense fallback={null}>
+          <AuthModal
+            isOpen={isAuthOpen}
+            onClose={() => setIsAuthOpen(false)}
+            onAuthSuccess={(authenticatedUser) => setUser(authenticatedUser)}
+          />
+        </Suspense>
+      )}
     </main>
   );
 }

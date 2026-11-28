@@ -11,6 +11,8 @@ dotenv.config({ path: path.resolve(process.cwd(), '../.env') });
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+app.disable('x-powered-by');
+
 app.use(cors({
   origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
   methods: ['GET', 'POST'],

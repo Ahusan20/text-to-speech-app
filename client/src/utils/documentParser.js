@@ -1,14 +1,6 @@
-import * as mammoth from 'mammoth';
-import * as pdfjsLib from 'pdfjs-dist';
-
-// Configure PDF.js worker
-if (typeof window !== 'undefined' && pdfjsLib.GlobalWorkerOptions) {
-  // Use worker from unpkg or bundler url
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version || '4.10.38'}/pdf.worker.min.mjs`;
-}
-
 /**
- * Extract plain text from TXT, DOCX, or PDF files
+ * Extract plain text from TXT, DOCX, or PDF files with on-demand dynamic imports.
+ * Keeps initial page load bundle lightweight.
  * @param {File} file
  * @returns {Promise<string>}
  */
@@ -17,20 +9,25 @@ export async function extractTextFromFile(file) {
 
   const fileName = file.name.toLowerCase();
 
-  // 1. Plain Text (.txt)
+  // 1. Plain Text (.txt) - 0 dependencies, instant parsing
   if (fileName.endsWith('.txt')) {
     return await file.text();
   }
 
-  // 2. Word Document (.docx)
+  // 2. Word Document (.docx) - loaded on-demand
   if (fileName.endsWith('.docx')) {
+    const mammoth = await import('mammoth');
     const arrayBuffer = await file.arrayBuffer();
     const result = await mammoth.extractRawText({ arrayBuffer });
     return result.value || '';
   }
 
-  // 3. PDF Document (.pdf)
+  // 3. PDF Document (.pdf) - loaded on-demand
   if (fileName.endsWith('.pdf')) {
+    const pdfjsLib = await import('pdfjs-dist');
+    if (typeof window !== 'undefined' && pdfjsLib.GlobalWorkerOptions) {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version || '4.10.38'}/pdf.worker.min.mjs`;
+    }
     const arrayBuffer = await file.arrayBuffer();
     const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
     const pdf = await loadingTask.promise;
@@ -41,7 +38,7 @@ export async function extractTextFromFile(file) {
       const textContent = await page.getTextContent();
       const pageStrings = textContent.items.map((item) => ('str' in item ? item.str : ''));
       fullText += (pageNum > 1 ? '\n' : '') + pageStrings.join(' ');
-      if (fullText.length > 2000) break; // Don't parse massive files unnecessarily
+      if (fullText.length > 2000) break;
     }
 
     return fullText;

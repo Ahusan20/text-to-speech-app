@@ -31,6 +31,7 @@ export function getVoices(req, res) {
     ? voices.filter((voice) => voice.language === language)
     : voices;
 
+  res.setHeader('Cache-Control', 'public, max-age=3600, stale-while-revalidate=86400');
   return res.status(200).json({
     success: true,
     voices: result,
